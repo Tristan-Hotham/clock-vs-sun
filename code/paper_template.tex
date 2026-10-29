@@ -1,0 +1,193 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage{fontspec}
+\setmainfont{TeX Gyre Pagella}
+\newfontfamily\headfont{Inter}[UprightFont=*-ExtraBold,BoldFont=*-ExtraBold,Extension=.otf,Path=/usr/share/fonts/opentype/inter/]
+\usepackage[a4paper,margin=2.3cm]{geometry}
+\usepackage{graphicx,booktabs,float,caption,array,xcolor}
+\usepackage[hidelinks]{hyperref}
+\usepackage{titlesec}
+\usepackage{setspace}
+\setstretch{1.05}
+\renewcommand{\topfraction}{0.9}
+\renewcommand{\bottomfraction}{0.8}
+\renewcommand{\textfraction}{0.1}
+\renewcommand{\floatpagefraction}{0.75}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.55em}
+\titleformat{\section}{\headfont\Large}{\thesection}{0.8em}{}
+\titleformat{\subsection}{\headfont\large}{\thesubsection}{0.8em}{}
+\captionsetup{font=small,labelfont=bf}
+\urlstyle{same}
+\hypersetup{pdftitle={How Wrong Is Your Clock? Clock Time Against Solar Time for the World's People in 2026},pdfauthor={Tristan Hotham}}
+
+\begin{document}
+\begin{center}
+{\Large\bfseries How Wrong Is Your Clock?\\[2pt] Clock Time Against Solar Time for the World's People in 2026\par}
+\vspace{1.2em}
+{\large Tristan Hotham\par}
+\vspace{0.3em}
+{\small Independent researcher\\
+ORCID: 0000-0003-4931-9349\\
+DOI: \href{https://doi.org/10.5281/zenodo.23757706}{https://doi.org/10.5281/zenodo.23757706}\par}
+\vspace{0.8em}
+2026
+\end{center}
+
+\begin{quote}
+\small
+\begin{center}\textbf{Abstract}\end{center}
+Clock time and solar time agree only along a few lines of longitude. Everywhere else the sun reaches its highest point before or after noon on the clock, and politics and daylight saving have moved most clocks further from the sun. I measure the gap between legal clock time and mean solar time for the world's population under the time zone rules of {{meta.year|raw}}, combining the timezone-boundary-builder boundaries (release 2026a), the IANA time zone database ({{meta.tz_version|raw}}), Kontur's 22 km population hexagons and {{meta.places_used|int}} GeoNames places of 1,000 people or more, with sunrise, sunset and solar noon from the NOAA solar equations for every day of the year. Averaged over {{meta.year|raw}}, {{population.e_ann.ahead|pct}} of the world's people live where the clock runs ahead of the sun, {{population.e_ann.ahead_30|pct}} by more than half an hour and {{population.e_ann.ahead_60|pct1}} by more than an hour; only {{population.e_ann.behind_30|pct1}} live where it runs more than half an hour behind. Spain is the furthest ahead of {{countries.n_1m|int}} countries of a million people or more, at {{country.Spain.e_ann|dur}} on average. In Galicia, at the western end of Spain's Central European clock, the latest sunrise of the year is {{stories.galicia_places.A Coruña.rise_late|raw}} in A Coruña against {{stories.galicia_places.London.rise_late|raw}} in London; among {{stories.europe_s55_n|int}} European cities of 100,000 or more south of 55 degrees north, only Brest has a later winter sunrise. The largest gaps for big cities come from single national clocks: Kashgar runs {{stories.china.kashgar.e_std|dur}} ahead of the sun on Beijing time, and Tinsukia in Assam {{stories.india.east.e_std|dur}} behind on India Standard Time. An interactive map gives the gap, sunrise, solar noon and sunset for any point through the year.
+
+\textbf{Keywords:} time zones; solar time; daylight saving time; sunrise; longitude; Spain; Galicia; China; India; population geography
+\end{quote}
+
+\section{Introduction}
+
+Noon used to be a local fact. Before the railways, towns kept mean solar time, so that the sun stood highest close to twelve on the town clock and a town a degree further east kept a clock four minutes ahead. Standard time zones replaced thousands of local times with a few shared ones, each correct for one meridian and wrong by up to half an hour at the edges of an ideal zone 15 degrees wide. That was the design. In practice, zones follow national and regional borders, many countries choose a zone east of the one their longitude suggests, some large countries keep a single zone across many meridians, and about one person in seven moves the clock forward for part of the year.
+
+The result is that for most people the sun does not keep the clock's hours. When the clock runs ahead of the sun, everything in the sky happens later by the clock: the sun rises later, stands highest later and sets later. This matters because people live by the clock but their bodies and mornings respond to light. A growing literature links the gap between social and solar time to sleep and health (Roenneberg, Winnebeck and Klerman 2019) and finds effects of sunset time across US time zone borders (Giuntella and Mazzonna 2019).
+
+This note asks three plain questions. How far, and in which direction, does the clock differ from the sun for the world's people in {{meta.year|raw}}? Which countries and cities are furthest from their sun, and why? And how much later are the mornings in places that are known for them, above all Galicia in north-west Spain, where winter mornings stay dark late? An interactive version answers the same questions for any point on Earth.
+
+\section{Data}
+
+\textbf{Time zone boundaries.} The boundaries are timezone-boundary-builder release 2026a (Siroky 2026), which builds polygons for each zone of the IANA time zone database from OpenStreetMap administrative boundaries. I use the land version, without the nominal ocean zones: {{meta.zones|int}} zones. The data are licensed under the Open Database License.
+
+\textbf{Time zone rules.} The clock offset from UTC on each day of {{meta.year|raw}} comes from the IANA time zone database version {{meta.tz_version|raw}} (IANA 2026), read through the Python \texttt{tzdata} package. {{meta.zones_with_change_2026|int}} of the zones change their offset at least once in {{meta.year|raw}}. The rules include two changes made during the year: Morocco moved from UTC plus one to plain UTC on 20 September {{meta.year|raw}}, and several Canadian provinces moved to permanent daylight time in November.
+
+\textbf{People.} Population comes from the Kontur Population dataset of 1 November 2023 (Kontur 2023), aggregated to H3 hexagons of resolution 4, about 22 km across: {{population.hexes|int}} hexagons with people and {{v.world_people_bn|raw}} billion people in all. Each hexagon is placed in the zone that contains its centre; the {{meta.zones|int}} zones leave only a few thousand people unassigned, mostly on tiny islands.
+
+\textbf{Places.} Towns and cities come from GeoNames cities1000 (GeoNames 2026), retrieved on {{meta.geonames_retrieved|raw}}: {{meta.places_used|int}} places of 1,000 people or more, each given the zone that contains it. GeoNames also records a time zone for each place; on every day of {{meta.year|raw}} it gives the same clock as the boundaries for {{meta.geonames_tz_agree|pct1}} of the places. Countries for population totals come from the Natural Earth 1:10m outlines (Natural Earth 2026).
+
+\section{Methods}
+
+\subsection{The gap between clock and sun}
+
+Mean solar time at a longitude of $L$ degrees east runs $4L$ minutes ahead of UTC. If the clock in force on a given day is $O$ minutes ahead of UTC, the clock runs
+\[ g = O - 4L \]
+minutes ahead of mean solar time. I fold $g$ into the range of plus or minus 12 hours, so that Tonga, on UTC plus 13 near 175 degrees west, counts as 40 minutes ahead rather than a day. A positive gap means the sun is late by the clock. I report three versions. The \emph{year average} averages $O$ over the clock in force at local midday on each day of {{meta.year|raw}}. \emph{No daylight saving} uses the smaller of the offsets in force on 15 December {{meta.year|raw}} and 15 June 2027, so it follows the rules as they stand at the end of {{meta.year|raw}}. \emph{21 June} and \emph{21 December} use the clock on those days.
+
+The gap uses mean solar time and leaves out the equation of time, which moves true solar noon up to about 16 minutes either way during the year. The equation of time is the same everywhere on a given day, so it does not change any comparison between places, but it is included in every sunrise, solar noon and sunset time below.
+
+\subsection{Legal time}
+
+I use legal time. The boundary file puts most of Xinjiang in the zone \texttt{Asia/Urumqi}, UTC plus six, which records the unofficial Xinjiang time that many local people use. Legal time in all of China is Beijing time, UTC plus eight, so I give Xinjiang Beijing time throughout and report the gap on Xinjiang time as an alternative. This affects {{v.xinjiang_people_m|int}} million people in the population data.
+
+\subsection{Sunrise, solar noon and sunset}
+
+For each place and each day of {{meta.year|raw}} I compute solar noon, sunrise and sunset in UTC with the equations of the NOAA solar calculator (NOAA Global Monitoring Laboratory; Meeus 1998), re-evaluating the sun's position at each event, and add the clock offset in force that day. Sunrise and sunset are when the top of the sun's disc meets a flat horizon, with the centre 0.833 degrees below it. The results agree with the \texttt{astral} Python package to within a minute. Hills, buildings and altitude are ignored. Where the sun does not rise or set, as in polar night and midnight sun, no time is recorded.
+
+\subsection{Shares and rankings}
+
+Shares of people weight each hexagon by its population. Country figures are population-weighted averages over the hexagons within each country; a few hexagons that straddle a border carry their centre's zone into the neighbouring country, which changes country averages by at most a few minutes. Rankings of cities use GeoNames places of 100,000 or more ({{extremes.n_100k|int}} places). For Europe I use the {{stories.europe_n_100k|int}} cities of 100,000 or more in 28 countries: the European Union apart from Cyprus and Malta, plus the United Kingdom, Norway and Switzerland.
+
+\section{Results}
+
+\subsection{Most people live ahead of the sun}
+
+Figure~\ref{fig:world} maps the year-average gap. The map is mostly orange: few places keep a clock behind the sun, and almost none by much. Figure~\ref{fig:hist} shows the world's people by the size of the gap. Averaged over {{meta.year|raw}}, {{population.e_ann.ahead|pct}} of people live where the clock runs ahead of the sun, {{population.e_ann.ahead_30|pct}} more than half an hour ahead, {{population.e_ann.ahead_60|pct1}} more than an hour ahead and {{population.e_ann.ahead_90|pct1}} more than an hour and a half ahead. The median person's clock runs {{population.e_ann.median|dur}} fast. Only {{population.e_ann.behind_30|pct1}} live where the clock is more than half an hour behind the sun.
+
+Daylight saving moves this less than one might expect, because only {{population.dst_share|pct}} of the world's people changed their clocks at all in {{meta.year|raw}}. Without daylight saving, {{population.e_std.ahead|pct}} would still live ahead of the sun and {{population.e_std.ahead_60|pct1}} more than an hour ahead. On 21 June the share more than an hour ahead rises to {{population.e_jun.ahead_60|pct1}}.
+
+\begin{figure}[tbp]\centering
+\includegraphics[width=\textwidth]{fig_world.png}
+\caption{Clock time minus mean solar time, averaged over {{meta.year|raw}}, by time zone and longitude (0.1 degree grid, legal time; Xinjiang on Beijing time). Orange and red: the clock runs ahead of the sun. Blue: behind. Labelled: places discussed in the text.}\label{fig:world}
+\end{figure}
+
+\begin{figure}[tbp]\centering
+\includegraphics[width=0.92\textwidth]{fig_hist.png}
+\caption{The world's people by the gap between clock and sun, in 15 minute bands. Bars: year average for {{meta.year|raw}}. Outline: without daylight saving. Kontur Population, 22 km hexagons.}\label{fig:hist}
+\end{figure}
+
+\subsection{Countries}
+
+Of the {{countries.n_1m|int}} countries with a million people or more, {{countries.n_1m_ahead|int}} run ahead of the sun on average and {{countries.n_1m_ahead_60|int}} by more than an hour (Figure~\ref{fig:countries} and Table~\ref{tab:countries}). Spain leads at {{country.Spain.e_ann|dur}}, followed by France ({{country.France.e_ann|dur}}), Chile ({{countries.ahead_most.2.e_ann|dur}}), Belgium, the Netherlands and Portugal. Western Europe dominates the list because the Central European zone, centred on 15 degrees east, reaches west to the Atlantic coast of France and Spain, and daylight saving adds another hour for seven months. The countries furthest behind the sun, Qatar, Mozambique, Costa Rica and Bahrain, sit at the eastern edges of their zones and are behind by only about twenty minutes. Among the largest countries, China averages {{country.China.e_ann|dur}} ahead, India {{country.India.e_ann|dur}}, the United States {{country.United States of America.e_ann|dur}} and the United Kingdom {{country.United Kingdom.e_ann|dur}}.
+
+\begin{figure}[tbp]\centering
+\includegraphics[width=0.88\textwidth]{fig_countries.png}
+\caption{Population-weighted gap between clock and sun by country, {{meta.year|raw}}: the fifteen countries furthest ahead, some large countries and the five furthest behind, among countries of a million people or more. Bar: year average. Mark: without daylight saving.}\label{fig:countries}
+\end{figure}
+
+{{TABLE_COUNTRIES}}
+
+\subsection{Galicia}
+
+Galicia, in the north-west corner of Spain, is the clearest case in Europe of a late sun. Spain keeps Central European Time, and Galicia lies near 8.5 degrees west, so in winter A Coruña's clock runs {{stories.galicia_places.A Coruña.e_std|dur}} ahead of the sun and in summer {{stories.galicia_places.A Coruña.e_jun|dur}} ahead. Over the year the gap is {{stories.galicia_places.A Coruña.e_ann|dur}} in A Coruña and {{stories.galicia_places.Vigo.e_ann|dur}} in Vigo, the two largest in the European group of cities of 100,000 or more. Across the {{stories.galicia_region.places|int}} Galician places in GeoNames the population-weighted average is {{stories.galicia_region.e_ann|dur}}.
+
+Table~\ref{tab:galicia} and Figure~\ref{fig:galicia} compare the three main Galician cities with London, Madrid, Barcelona and Porto. The latest sunrise of the year comes on {{stories.galicia_places.A Coruña.rise_late_date|raw}} at {{stories.galicia_places.A Coruña.rise_late|raw}} in A Coruña, {{stories.galicia_places.Santiago de Compostela.rise_late|raw}} in Santiago de Compostela and {{stories.galicia_places.Vigo.rise_late|raw}} in Vigo. London's latest is {{stories.galicia_places.London.rise_late|raw}}, although London is {{v.gal_lat_minus_london|f1}} degrees further north and has much shorter winter days. Madrid's latest sunrise is {{stories.galicia_places.Madrid.rise_late|raw}} and Barcelona's {{stories.galicia_places.Barcelona.rise_late|raw}}. The sun rises after 9:00 on {{stories.galicia_places.A Coruña.days_rise_after_9|int}} days of {{meta.year|raw}} in A Coruña and after 8:30 on {{stories.galicia_places.A Coruña.days_rise_after_830|int}} days. In June the pattern turns round: solar noon comes at {{stories.galicia_places.A Coruña.noon_jun21|raw}} and the sun sets at {{stories.galicia_places.A Coruña.set_jun21|raw}}.
+
+The comparison with Portugal isolates the clock. Porto lies at almost the same longitude as Vigo and sees the sun rise at almost the same moment, but Portugal keeps the time of London, so Vigo's clock runs {{v.vigo_vs_porto_e|int}} minutes further ahead and its sunrise comes an hour later by the clock. Porto's latest sunrise is {{stories.galicia_places.Porto.rise_late|raw}}.
+
+Among the {{stories.europe_s55_n|int}} European cities of 100,000 or more south of 55 degrees north, only Brest, at the western tip of Brittany on the same Central European clock, has a later winter sunrise than A Coruña ({{stories.europe_s55_latest_rise.0.rise_late|raw}} against {{stories.europe_s55_latest_rise.1.rise_late|raw}}); Vigo and Ourense are third and fourth (Figure~\ref{fig:iberia}). Across all {{stories.europe_n_100k|int}} cities in the group, A Coruña ranks {{stories.europe_coruna_rank_all|int}}st for its latest sunrise, behind only Brest and cities in Finland, Norway, Sweden and Estonia, where the days are short. Vigo has the latest solar noon of the whole group, {{stories.europe_latest_noon_jun21.0.noon_jun21|raw}} on 21 June.
+
+{{TABLE_GALICIA}}
+
+\begin{figure}[tbp]\centering
+\includegraphics[width=0.92\textwidth]{fig_galicia.png}
+\caption{Sunrise by the clock through {{meta.year|raw}}: A Coruña, Santiago de Compostela and Vigo against Madrid, Barcelona, London and Porto. Later sunrises are lower. The dashed line marks 9:00; the steps are the clock changes of 29 March and 25 October.}\label{fig:galicia}
+\end{figure}
+
+\begin{figure}[tbp]\centering
+\includegraphics[width=0.8\textwidth]{fig_iberia.png}
+\caption{Year-average gap between clock and sun in Iberia, France and southern Britain, with the gap for selected cities in minutes. The step at the Spanish and Portuguese border is one hour.}\label{fig:iberia}
+\end{figure}
+
+\subsection{Single national clocks}
+
+The largest gaps for big cities come from countries that keep one clock across many meridians (Figure~\ref{fig:longitude}). Within each zone the gap falls by four minutes for every degree east, so a wide country on one clock shows as one long diagonal line.
+
+\emph{China.} China's towns span {{stories.china.east_west_deg|int}} degrees of longitude, nearly enough for four zones, on one clock. In Fuyuan, in the far north-east, the clock runs {{stories.china.east_place.e_std|dur}} behind the sun; in Kashgar it runs {{stories.china.kashgar.e_std|dur}} ahead, the largest gap of any city of 100,000 or more in the world. All ten cities of that size with the largest gaps are in Xinjiang. Kashgar's latest sunrise is {{stories.china.kashgar.rise_late|raw}}, winter solar noon is at {{stories.china.kashgar.noon_dec21|raw}} and the June sun sets at {{stories.china.kashgar.set_jun21|raw}}. On informal Xinjiang time the gap would be {{stories.china.kashgar_xinjiang_time_e_std|dur}}. The China and Afghanistan border has the largest clock jump between neighbouring zones anywhere, {{v.afg_chn_jump|dur}}.
+
+\emph{India.} India Standard Time, five and a half hours ahead of UTC, is mean solar time at 82.5 degrees east. Among cities of 100,000 or more, Porbandar in Gujarat runs {{stories.india.west.e_std|dur}} ahead of the sun and Tinsukia in Assam {{stories.india.east.e_std|dur}} behind, the largest gap behind the sun of any city of that size. On 21 June the sun rises at {{stories.india.east.rise_jun21|raw}} in Tinsukia and {{stories.india.west.rise_jun21|raw}} in Porbandar.
+
+\emph{Argentina.} Almost all of Argentina lies west of 52.5 degrees west, the western edge of the ideal zone for UTC minus three, which the country keeps all year. Buenos Aires runs {{stories.argentina.buenos_aires.e_std|dur}} ahead of the sun, Córdoba {{stories.argentina.cordoba.e_std|dur}} and Mendoza {{stories.argentina.mendoza.e_std|dur}}; in Ushuaia the sun rises at {{stories.argentina.ushuaia.rise_jun21|raw}} on 21 June.
+
+\emph{Russia.} Russia uses {{stories.russia.zones_std_offsets|len}} offsets. Moscow time reaches Vorkuta, near the northern end of the Urals at 64 degrees east, where the clock runs {{extremes.behind_any.2.e_std|dur}} behind the sun; places near Vorkuta are the furthest behind the sun of any town of 1,000 people or more. Novosibirsk runs {{stories.russia.ahead_100k.2.e_std|dur}} ahead.
+
+\emph{The United Kingdom.} Greenwich lies near the eastern edge of Britain. Without daylight saving, Lowestoft, the most easterly town of 5,000 or more, runs {{stories.uk.lowestoft.e_std|dur}} behind the sun and Enniskillen in Northern Ireland {{stories.uk.west_ni.e_std|dur}} ahead. On 21 December the sun rises at {{stories.uk.london.rise_dec21|raw}} in London, {{stories.uk.belfast.rise_dec21|raw}} in Belfast and {{stories.uk.stornoway.rise_dec21|raw}} in Stornoway.
+
+\begin{figure}[tbp]\centering
+\includegraphics[width=0.92\textwidth]{fig_longitude.png}
+\caption{Gap between clock and sun without daylight saving against longitude, for the {{extremes.n_100k|int}} GeoNames places of 100,000 or more. Each diagonal is one clock; selected countries are coloured.}\label{fig:longitude}
+\end{figure}
+
+{{TABLE_EXTREMES}}
+
+\section{Discussion}
+
+The striking feature of the world's clocks is their one-sidedness. A zone system laid out by longitude alone would put about half of people ahead of the sun and half behind, and nobody more than half an hour either way. In {{meta.year|raw}}, {{population.e_ann.ahead|pct}} of people are ahead, and {{v.ahead_60_people_m|int}} million people are more than an hour ahead on average. The drift has three sources visible in the data. Countries at the western edge of a zone often choose the zone to their east: Spain, France and the Benelux countries on Central European Time, Argentina on UTC minus three. Large countries keep one clock: China and India hold about a third of humanity between them, and their single clocks produce both of the world's extreme city gaps. And daylight saving, where it is used, adds an hour in summer.
+
+Being ahead of the sun means late sunrises and late sunsets by the clock. The gap is felt most where it combines with short winter days. Galicia shows this clearly: its latest sunrise is later than in any European city of its size south of 55 degrees north except Brest, while its June evenings stay light past ten. The common impression that Galician mornings are very late is borne out by the numbers, and the cause is the clock: the same sun rises an hour earlier by the clock in Porto. Spain has kept Central European Time since 1940, and debates about returning to the time of Portugal and the UK recur. This note does not take a side. It only measures how far each clock is from its sun.
+
+\section{Limitations}
+
+The measure is a clock gap, not a measure of daylight or of lived time. Schools, shops and offices may set their hours to suit the sun, and in some places informal local times are common (Xinjiang is the largest case and is reported both ways). The time zone polygons follow OpenStreetMap boundaries and can be wrong in detail; on the interactive map they are stored on a 0.1 degree grid, so a point within a few kilometres of a boundary can fall in the neighbouring zone. Population hexagons are 22 km across and take the zone of their centre, so border hexagons can be misassigned. GeoNames coordinates and populations contain errors and duplicate districts; the city rankings use places of 100,000 or more to reduce these. Sun times assume a flat horizon at sea level. The {{meta.year|raw}} rules include changes made during the year, so the year average for Morocco and the Canadian provinces mixes old and new rules. Finally, time zone rules change often, so these figures describe {{meta.year|raw}} only.
+
+\section{Conclusion}
+
+For three people in four, the clock runs ahead of the sun. The largest gaps are not accidents of geography but choices: a single clock for China or India, Central European Time for Spain and France, a permanently advanced clock for Argentina, and daylight saving across much of the northern world. In Galicia the result is a winter sunrise after nine o'clock and a June sunset after ten; among Europe's larger cities south of 55 degrees north, only Brest sees a later winter sunrise than A Coruña.
+
+\section*{Data and code availability}
+
+The interactive map, which gives the gap and the year's sunrise, solar noon and sunset for any point, is at \url{https://maps.tristanhotham.com/clock-vs-sun/}. Code and derived data (places, countries, zones and population shares as CSV, and every number in this note in \texttt{results.json}) are at \url{https://github.com/Tristan-Hotham/clock-vs-sun} and archived with this note at \url{https://doi.org/10.5281/zenodo.23757706}. Text, figures and derived data are licensed CC BY 4.0, except files derived from the time zone boundaries, which are shared under the ODbL 1.0; code is MIT.
+
+\section*{AI statement}
+
+I wrote the text, with drafting and editing assistance from Claude (Anthropic), which also helped prepare the analysis code. I reviewed and checked all text and results.
+
+\section*{References}
+\small
+\begin{description}\setlength{\itemsep}{0.2em}
+\item GeoNames (2026) GeoNames geographical database, cities1000. \url{https://download.geonames.org/export/dump/}. CC BY 4.0.
+\item Giuntella, O. and Mazzonna, F. (2019) Sunset time and the economic effects of social jetlag: evidence from US time zone borders. \emph{Journal of Health Economics}.
+\item IANA (2026) Time Zone Database, version {{meta.tz_version|raw}}. \url{https://www.iana.org/time-zones}.
+\item Kennedy, S. (2026) astral: calculations for the position of the sun and moon. Python package. \url{https://github.com/sffjunkie/astral}.
+\item Kontur (2023) Kontur Population: Global Population Density for 22km H3 Hexagons, release 1 November 2023. Humanitarian Data Exchange. \url{https://data.humdata.org/dataset/kontur-population-dataset-22km}. CC BY 4.0.
+\item Meeus, J. (1998) \emph{Astronomical Algorithms}. 2nd edition. Richmond, VA: Willmann-Bell.
+\item Natural Earth (2026) Admin 0 countries, 1:10m and 1:50m. \url{https://www.naturalearthdata.com/}. Public domain.
+\item NOAA Global Monitoring Laboratory (2026) Solar Calculator. \url{https://gml.noaa.gov/grad/solcalc/}.
+\item Roenneberg, T., Winnebeck, E.C. and Klerman, E.B. (2019) Daylight saving time and artificial time zones: a battle between biological and social times. \emph{Frontiers in Physiology}.
+\item Siroky, E. (2026) timezone-boundary-builder, release 2026a. \url{https://github.com/evansiroky/timezone-boundary-builder}. Open Database License 1.0; data from OpenStreetMap contributors.
+\end{description}
+
+\end{document}

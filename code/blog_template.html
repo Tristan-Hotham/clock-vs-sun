@@ -1,0 +1,149 @@
+<!-- wp:paragraph -->
+<p><em>Noon on the clock is meant to be when the sun is highest. For three people in four it is not. I measured how far every clock on Earth runs from its sun, and found out why Galician mornings stay dark so late.</em></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:buttons -->
+<div class="wp-block-buttons"><!-- wp:button -->
+<div class="wp-block-button"><a class="wp-block-button__link wp-element-button" href="https://maps.tristanhotham.com/clock-vs-sun/">Explore the interactive version</a></div>
+<!-- /wp:button -->
+<!-- wp:button -->
+<div class="wp-block-button"><a class="wp-block-button__link wp-element-button" href="https://doi.org/10.5281/zenodo.23757706">Read the paper</a></div>
+<!-- /wp:button --></div>
+<!-- /wp:buttons -->
+
+<!-- wp:paragraph -->
+<p>Anyone who has spent a winter in Galicia knows the feeling. It is past nine, people are at work, and the sky is still dark. It feels as if the clock is simply wrong there, and in a sense it is. So I measured it, and then measured everywhere else too.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>The idea is simple. The sun crosses 15 degrees of longitude an hour, so every place has its own solar time, four minutes later for each degree further east. Compare that with the clock on the wall and you have the gap. If the clock runs ahead of the sun, the sun rises, stands highest and sets later by the clock. I worked out the gap for every 22 km patch of the world's population and every town of 1,000 people or more, for every day of {{meta.year|raw}}, using the official time zone boundaries and the rules in the IANA time zone database.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">A world that runs late</h2>
+<!-- /wp:heading -->
+
+<!-- wp:image {"sizeSlug":"full"} -->
+<figure class="wp-block-image size-full">{{IMG|b_world.png|World map coloured by how far the clock runs ahead of the sun, averaged over 2026: most land is orange, with dark red in western China, Galicia, Argentina and Greenland, and blue in eastern India, north-east China and the Russian Arctic|Clock time minus solar time, averaged over {{meta.year|raw}}. Orange and red: the clock is ahead, so the sun is late. Blue: the clock is behind.}}</figure>
+<!-- /wp:image -->
+
+<!-- wp:paragraph -->
+<p>The map is mostly orange. Averaged over the year, {{population.e_ann.ahead|pct}} of the world's people live where the clock runs ahead of the sun, {{population.e_ann.ahead_30|pct}} by more than half an hour and {{population.e_ann.ahead_60|pct1}}, about {{v.ahead_60_people_m|int}} million people, by more than an hour. Only {{population.e_ann.behind_30|pct1}} live where the clock is more than half an hour behind.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>If time zones simply followed longitude, about half of us would be a little ahead and half a little behind, and nobody more than half an hour out. The lean towards "ahead" comes from choices. Countries at the western edge of a zone often take the zone to the east. Big countries keep one clock. And daylight saving adds an hour in summer, though only {{population.dst_share|pct}} of the world's people changed their clocks at all in {{meta.year|raw}}.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:image {"sizeSlug":"full"} -->
+<figure class="wp-block-image size-full">{{IMG|b_hist.png|Bar chart of the world's population by the gap between clock and sun in 15 minute bands, with most people between zero and an hour ahead|The world's people by how far their clock runs from the sun. Bars: year average. Outline: without daylight saving.}}</figure>
+<!-- /wp:image -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">Spain leads the world</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>Of {{countries.n_1m|int}} countries with a million people or more, Spain is the furthest ahead of its sun: {{country.Spain.e_ann|dur}} on average across the year. France ({{country.France.e_ann|dur}}), Chile, Belgium, the Netherlands and Portugal follow. Western Europe dominates because Central European Time, the clock of Berlin and Rome, stretches all the way to the Atlantic coasts of France and Spain, and summer time adds another hour for seven months of the year.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:image {"sizeSlug":"full"} -->
+<figure class="wp-block-image size-full">{{IMG|b_countries.png|Horizontal bar chart of the gap between clock and sun for selected countries, with Spain at the top at 104 minutes and Qatar at the bottom at 26 minutes behind|Population-weighted gap by country, {{meta.year|raw}}. Bar: year average. Mark: without daylight saving.}}</figure>
+<!-- /wp:image -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">Galicia: the latest mornings in Europe's south</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>Galicia sits at the far western end of Spain's clock, near 8.5 degrees west. In winter A Coruña's clock runs {{stories.galicia_places.A Coruña.e_std|dur}} ahead of the sun; in summer, {{stories.galicia_places.A Coruña.e_jun|dur}}. The latest sunrise of the year comes on {{stories.galicia_places.A Coruña.rise_late_date|raw}} at {{stories.galicia_places.A Coruña.rise_late|raw}}. Santiago de Compostela's latest is {{stories.galicia_places.Santiago de Compostela.rise_late|raw}} and Vigo's {{stories.galicia_places.Vigo.rise_late|raw}}.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>Compare that with London. London is {{v.gal_lat_minus_london|f1}} degrees further north, with much shorter winter days, yet its sun never rises later than {{stories.galicia_places.London.rise_late|raw}}. Madrid's latest is {{stories.galicia_places.Madrid.rise_late|raw}} and Barcelona's {{stories.galicia_places.Barcelona.rise_late|raw}}. In {{meta.year|raw}} the sun rises after 9:00 on {{stories.galicia_places.A Coruña.days_rise_after_9|int}} days in A Coruña, and after 8:30 on {{stories.galicia_places.A Coruña.days_rise_after_830|int}} days, almost a third of the year.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:image {"sizeSlug":"full"} -->
+<figure class="wp-block-image size-full">{{IMG|b_galicia.png|Line chart of sunrise times through 2026 for A Coruña, Santiago, Vigo, Madrid, Barcelona, London and Porto, with the three Galician cities latest all year and close to 9:00 in winter|Sunrise by the clock through {{meta.year|raw}}. Later sunrises are lower. The steps are the clock changes in March and October.}}</figure>
+<!-- /wp:image -->
+
+<!-- wp:pullquote -->
+<figure class="wp-block-pullquote"><blockquote><p>Vigo and Porto see the sun rise at almost the same moment. By the clock, Vigo's sunrise comes an hour later.</p></blockquote></figure>
+<!-- /wp:pullquote -->
+
+<!-- wp:paragraph -->
+<p>The proof that it is the clock, not the geography, is just down the coast. Porto lies at almost the same longitude as Vigo, but Portugal keeps the time of London. The two cities share a sun, but Vigo's clock runs {{v.vigo_vs_porto_e|int}} minutes further ahead, and Porto's latest sunrise is {{stories.galicia_places.Porto.rise_late|raw}}. Cross the bridge over the Miño at Tui and the clock jumps an hour.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>Among the {{stories.europe_s55_n|int}} European cities of 100,000 people or more south of 55 degrees north, only Brest, at the tip of Brittany, sees a later winter sunrise than A Coruña. Vigo and Ourense come third and fourth. The only cities with later sunrises are in Finland, Norway, Sweden and Estonia, where the winter days are short. The flip side comes in June: solar noon in Vigo falls at {{stories.europe_latest_noon_jun21.0.noon_jun21|raw}}, the latest of all {{stories.europe_n_100k|int}} cities in the group, and the sun sets after ten.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:image {"sizeSlug":"full"} -->
+<figure class="wp-block-image size-full">{{IMG|b_iberia.png|Map of Iberia, France and southern Britain coloured by the gap between clock and sun, with Galicia darkest and a sharp step at the border with Portugal|The year-average gap in Iberia and France, with the gap for some cities in minutes. The step at the Portuguese border is one hour.}}</figure>
+<!-- /wp:image -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">One clock, many suns</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>The biggest gaps for big cities come from countries that keep one clock across many degrees of longitude. In Kashgar, in far western China, the clock runs {{stories.china.kashgar.e_std|dur}} ahead of the sun on Beijing time, the most of any city of 100,000 or more in the world; its latest sunrise is {{stories.china.kashgar.rise_late|raw}} and in June the sun sets at {{stories.china.kashgar.set_jun21|raw}}. Many people there use an unofficial Xinjiang time two hours behind Beijing, which would cut the gap to {{stories.china.kashgar_xinjiang_time_e_std|dur}}. At the other end of China, in Fuyuan on the Amur, the clock runs {{stories.china.east_place.e_std|dur}} behind the sun.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>India does the same on a smaller scale. Porbandar in Gujarat runs {{stories.india.west.e_std|dur}} ahead of the sun and Tinsukia in Assam {{stories.india.east.e_std|dur}} behind, the furthest behind of any city of its size. On 21 June the sun rises at {{stories.india.east.rise_jun21|raw}} in Tinsukia. Argentina keeps a clock an hour ahead of its natural zone all year, so Mendoza runs {{stories.argentina.mendoza.e_std|dur}} ahead. And Moscow time reaches Vorkuta, at 64 degrees east, where the clock runs {{extremes.behind_any.2.e_std|dur}} behind the sun.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:image {"sizeSlug":"full"} -->
+<figure class="wp-block-image size-full">{{IMG|b_longitude.png|Scatter plot of cities of 100,000 or more by longitude and gap between clock and sun, forming diagonal lines, with China as one long red diagonal from almost three hours ahead to about 45 minutes behind|Each diagonal is one clock: within a zone the gap falls four minutes for every degree east. China, India and Russia stretch furthest.}}</figure>
+<!-- /wp:image -->
+
+<!-- wp:paragraph -->
+<p>Closer to home, the UK spans almost forty minutes. In Lowestoft the winter clock runs {{stories.uk.lowestoft.e_std|dur}} behind the sun; in Enniskillen it runs {{stories.uk.west_ni.e_std|dur}} ahead. On the shortest day the sun rises at {{stories.uk.london.rise_dec21|raw}} in London and {{stories.uk.stornoway.rise_dec21|raw}} in Stornoway.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">How I did this</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>Time zone boundaries come from timezone-boundary-builder (release 2026a, built from OpenStreetMap) and the clock rules from the IANA time zone database ({{meta.tz_version|raw}}), which includes this year's changes such as Morocco's move to plain UTC in September. People come from Kontur's population data in 22 km hexagons, and towns from GeoNames. The gap is the clock's offset from UTC minus four minutes per degree of longitude. Sunrise, solar noon and sunset use the NOAA solar equations for each day. I use legal time throughout, so Xinjiang is on Beijing time. The map cannot show how people adapt: schools and shops may open later where the sun rises late. The interactive version gives the gap and the year's sunrises and sunsets for any spot you tap.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:buttons -->
+<div class="wp-block-buttons"><!-- wp:button -->
+<div class="wp-block-button"><a class="wp-block-button__link wp-element-button" href="https://maps.tristanhotham.com/clock-vs-sun/">Explore the interactive version</a></div>
+<!-- /wp:button -->
+<!-- wp:button -->
+<div class="wp-block-button"><a class="wp-block-button__link wp-element-button" href="https://doi.org/10.5281/zenodo.23757706">Read the paper</a></div>
+<!-- /wp:button -->
+<!-- wp:button -->
+<div class="wp-block-button"><a class="wp-block-button__link wp-element-button" href="https://github.com/Tristan-Hotham/clock-vs-sun">Data and code</a></div>
+<!-- /wp:button --></div>
+<!-- /wp:buttons -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">Notes and sources</h3>
+<!-- /wp:heading -->
+
+<!-- wp:list -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li>Time zone boundaries: <a href="https://github.com/evansiroky/timezone-boundary-builder">timezone-boundary-builder</a>, release 2026a, Open Database License 1.0, from OpenStreetMap data.</li>
+<!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li>Time zone rules: <a href="https://www.iana.org/time-zones">IANA time zone database</a>, version {{meta.tz_version|raw}}.</li>
+<!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li>Population: <a href="https://data.humdata.org/dataset/kontur-population-dataset-22km">Kontur Population, 22 km hexagons</a> (November 2023), CC BY 4.0. Towns: <a href="https://download.geonames.org/export/dump/">GeoNames cities1000</a>, CC BY 4.0. Country outlines: <a href="https://www.naturalearthdata.com">Natural Earth</a>.</li>
+<!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li>Sun times: <a href="https://gml.noaa.gov/grad/solcalc/">NOAA solar calculator</a> equations, checked against the astral Python package.</li>
+<!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li>Text, figures and derived data are CC BY 4.0, except files derived from the time zone boundaries (ODbL 1.0); the code is MIT.</li>
+<!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li>I wrote the text, with drafting and editing assistance from Claude (Anthropic), which also helped prepare the analysis code. I reviewed and checked all text and results.</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->

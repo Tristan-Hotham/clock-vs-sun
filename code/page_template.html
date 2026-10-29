@@ -1,0 +1,634 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Clock Versus Sun</title>
+<meta name="description" content="How wrong is your clock? A world map of the gap between clock time and the sun, with sunrise, sunset and solar noon for any place through 2026. Spain, Galicia, western China, India, Argentina, Russia and the UK.">
+<meta property="og:title" content="How wrong is your clock?">
+<meta property="og:description" content="{{population.e_ann.ahead|pct}} of the world's people live where the clock runs ahead of the sun. In Galicia the winter sun rises after nine.">
+<meta property="og:image" content="https://maps.tristanhotham.com/clock-vs-sun/header.png">
+<meta property="og:url" content="https://maps.tristanhotham.com/clock-vs-sun/">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800;9..144,900&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+/* Morning paper: warm cream, ink, sun-orange for "clock ahead of the sun", slate blue for "behind". */
+:root{
+  --bg:#FAF6EE; --panel:#F1EBDF; --fg:#1E1B18; --muted:#6A635A; --rule:#E2D9C9; --card:#FFFDF8; --border:#CFC4B2;
+  --accent:#D9661F; --accent2:#2F5F8F; --sea:#E7ECEE; --land:#F3EEE4; --line:#5B564F; --nodata:#ECE6DA;
+  --display:"Fraunces",Georgia,"Times New Roman",serif;
+  --body:"Source Serif 4",Georgia,"Times New Roman",serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#17161A; --panel:#211F24; --fg:#EEEAE3; --muted:#A8A29A; --rule:#34313A; --card:#1D1C21; --border:#4A4650;
+  --accent:#F08A45; --accent2:#7FA8D6; --sea:#1A1F26; --land:#28262C; --line:#D2CDC5; --nodata:#3A3740; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#17161A; --panel:#211F24; --fg:#EEEAE3; --muted:#A8A29A; --rule:#34313A; --card:#1D1C21; --border:#4A4650;
+  --accent:#F08A45; --accent2:#7FA8D6; --sea:#1A1F26; --land:#28262C; --line:#D2CDC5; --nodata:#3A3740; color-scheme:dark}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font:400 18px/1.62 var(--body);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));overflow-x:hidden}
+.wrap{max-width:700px;margin:0 auto;padding-block:28px 64px}
+.wrap .bleed{width:min(1180px,calc(100vw - 32px));margin-left:calc((100% - min(1180px,100vw - 32px))/2)}
+a{color:inherit;text-decoration-color:var(--accent);text-underline-offset:3px}
+.kicker{font:500 12px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.kicker b{background:var(--fg);color:var(--bg);padding:5px 8px;font-weight:500}
+header.hero{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px 24px;align-items:end;border-bottom:6px double var(--fg);padding-bottom:22px;margin-top:18px}
+h1{font:900 clamp(40px,9.5vw,82px)/.94 var(--display);letter-spacing:-.02em;margin:0;text-wrap:balance}
+h1 em{font-style:normal;background:linear-gradient(90deg,#2F5F8F,#E3A33B 45%,#D9661F 70%,#8E2A3B);-webkit-background-clip:text;background-clip:text;color:transparent}
+.mark{width:clamp(74px,15vw,124px);height:auto;display:block}
+.dek{grid-column:1/-1;font-size:21px;line-height:1.42;margin:8px 0 0;max-width:54ch}
+.byline{font:400 13px/1.4 var(--mono);color:var(--muted);margin-top:14px}
+h2{font:800 34px/1.06 var(--display);letter-spacing:-.01em;margin:56px 0 10px;text-wrap:balance}
+h2 .n{font:500 13px/1 var(--mono);color:var(--accent);display:block;letter-spacing:.1em;margin-bottom:10px}
+h3{font:600 21px/1.25 var(--display);margin:30px 0 6px}
+p{margin:0 0 16px}
+.lede::first-letter{font:900 70px/.8 var(--display);float:left;margin:6px 10px 0 0;color:var(--accent)}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule);margin:26px 0 8px}
+.stats div{background:var(--card);padding:14px 12px}
+.stats b{display:block;font:900 clamp(22px,4.4vw,32px)/1 var(--display);letter-spacing:-.01em}
+.stats span{font:400 12px/1.35 var(--mono);color:var(--muted);display:block;margin-top:6px}
+@media (max-width:600px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.figure{margin:26px 0 30px}
+.fig-h{font:600 19px/1.25 var(--display);margin:0 0 4px}
+.fig-sub{font:400 13px/1.45 var(--mono);color:var(--muted);margin:0 0 12px}
+.src{font:400 12px/1.5 var(--mono);color:var(--muted);margin-top:10px}
+.chart{width:100%;position:relative}
+.chart svg{display:block;width:100%;height:auto;overflow:visible}
+svg text{font-family:var(--mono);fill:var(--fg)}
+.lab{font-size:12px}.lab.m{fill:var(--muted)}.lab.b{font-weight:500}.lab.s{font-size:11px}
+.tip{position:absolute;pointer-events:none;background:var(--fg);color:var(--bg);font:400 12px/1.45 var(--mono);padding:8px 10px;border-radius:3px;max-width:300px;z-index:1000;transform:translate(-50%,calc(-100% - 12px));display:none}
+.controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 10px}
+.ctl-l{font:500 11px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-right:2px}
+.btn{font:500 12px/1 var(--mono);background:var(--card);color:var(--fg);border:1px solid var(--border);border-radius:3px;padding:8px 10px;cursor:pointer;min-height:36px;white-space:nowrap}
+.btn[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.btn:focus-visible,input:focus-visible,summary:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:3px;overflow:hidden;max-width:100%;flex-wrap:wrap}
+.seg .btn{border:0;border-radius:0;border-right:1px solid var(--border)}
+.seg .btn:last-child{border-right:0}
+select{font:500 12px/1 var(--mono);background:var(--card);color:var(--fg);border:1px solid var(--border);border-radius:3px;padding:8px 6px;min-height:36px;max-width:100%}
+.searchbox{position:relative;flex:1 1 240px;min-width:0}
+input[type=search]{font:400 15px/1 var(--mono);background:var(--card);color:var(--fg);border:1px solid var(--border);border-radius:3px;padding:10px 11px;min-height:40px;width:100%}
+.suggest{position:absolute;left:0;right:0;top:100%;margin:2px 0 0;padding:0;list-style:none;background:var(--card);border:1px solid var(--border);z-index:1001;font:400 13px/1.3 var(--mono);display:none;max-height:340px;overflow:auto}
+.suggest li{padding:8px 10px;cursor:pointer;border-bottom:1px solid var(--rule)}
+.suggest li span{color:var(--muted)}
+.suggest li[aria-selected="true"],.suggest li:hover{background:var(--panel)}
+/* map controls: one compact row that scrolls sideways on phones */
+.mapctl{display:flex;gap:8px;align-items:center;margin:0 0 8px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:thin;padding-bottom:2px}
+.mapctl .seg{flex-wrap:nowrap;flex:0 0 auto}
+.datebar{display:flex;gap:10px;align-items:center;margin:0 0 8px}
+.datebar input[type=range]{flex:1 1 auto;accent-color:var(--accent);min-width:0}
+.datebig{font:800 22px/1 var(--display);min-width:7.6ch;white-space:nowrap}
+.mapgrid{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:14px;align-items:start}
+@media (max-width:920px){.mapgrid{grid-template-columns:minmax(0,1fr)}}
+.side{background:var(--card);border:1px solid var(--border);padding:12px 12px 10px;font:400 13px/1.45 var(--mono);min-width:0}
+.side h4{font:500 11px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:14px 0 8px}
+.side h4:first-child{margin-top:2px}
+.mapbox{position:relative}
+#lmap{height:600px;border:1px solid var(--border);background:var(--sea);border-radius:2px}
+@media (max-width:600px){#lmap{height:56vh;min-height:330px;max-height:470px}}
+.leaflet-container{font:400 12px/1.4 var(--mono);background:var(--sea)}
+.leaflet-image-layer.px{image-rendering:pixelated}
+.loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:500 13px/1.4 var(--mono);color:var(--muted);background:color-mix(in srgb,var(--panel) 80%,transparent);z-index:900;pointer-events:none}
+.legend{display:flex;align-items:stretch;margin:8px 0 0;font:400 11px/1.2 var(--mono);color:var(--muted)}
+.legend div{flex:1 1 0;text-align:center}
+.legend i{display:block;height:12px;border-right:1px solid var(--card)}
+.legend span{display:block;margin-top:3px;white-space:nowrap}
+.legcap{display:flex;justify-content:space-between;font:500 11px/1.3 var(--mono);color:var(--muted);margin-top:4px}
+.lyrBtn{background:var(--card);color:var(--fg);border:1px solid var(--border);border-radius:3px;font:600 12px/1 var(--mono);padding:8px 10px;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.12)}
+.lyrBtn[aria-expanded="true"]{background:var(--fg);color:var(--bg)}
+.lyrPanel{background:var(--card);color:var(--fg);border:1px solid var(--border);border-radius:3px;padding:10px 12px 8px;margin-top:6px;width:240px;box-shadow:0 2px 10px rgba(0,0,0,.15);font:400 12px/1.3 var(--mono);max-height:60vh;overflow:auto}
+.lyrPanel[hidden]{display:none}
+.lyrPanel .row{margin:0 0 9px}
+.lyrPanel label{display:flex;gap:6px;align-items:center;cursor:pointer;font-weight:600}
+.lyrPanel input[type=range]{width:100%;accent-color:var(--fg)}
+.lyrPanel select{font:400 12px var(--mono);background:var(--bg);color:var(--fg);border:1px solid var(--border);border-radius:2px;padding:2px 4px;width:100%;min-height:26px}
+.lyrPanel .sub{display:flex;gap:6px;align-items:center;color:var(--muted);font-size:11px;margin-top:3px}
+.lyrPanel .sub span{flex:0 0 58px}
+.lyrPanel .reset{font:400 11px var(--mono);color:var(--muted);background:none;border:0;padding:0;cursor:pointer;text-decoration:underline}
+.town{font:500 11px/1 var(--mono);color:var(--fg);white-space:nowrap;text-shadow:0 0 3px var(--bg),0 0 3px var(--bg),0 0 2px var(--bg);pointer-events:none}
+.town i{display:inline-block;width:4px;height:4px;border-radius:50%;background:var(--fg);margin-right:4px;vertical-align:1px}
+.town.r3{font-weight:600;font-size:12px}
+.town.r0,.town.r1{font-weight:400;font-size:10.5px}
+.sat .town{color:#fff;text-shadow:0 0 3px #000,0 0 3px #000}
+.sat .town i{background:#fff}
+.leaflet-tooltip{font:400 12px/1.4 var(--mono);background:var(--fg);color:var(--bg);border:0;border-radius:3px;box-shadow:none}
+.leaflet-tooltip:before{display:none}
+.leaflet-bar a,.leaflet-bar a:hover{background:var(--card);color:var(--fg);border-bottom-color:var(--border)}
+.leaflet-control-attribution{background:color-mix(in srgb,var(--card) 85%,transparent)!important;color:var(--muted)}
+.leaflet-control-attribution a{color:var(--fg)}
+#card .big{font:800 24px/1.12 var(--display);margin:4px 0 2px;text-wrap:balance}
+#card .sub{color:var(--muted);font-size:12px;margin:0 0 8px}
+.gap{font:900 30px/1 var(--display);margin:6px 0 2px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;margin:8px 0}
+.kv dt{color:var(--muted)}.kv dd{margin:0;text-align:right}
+.pull{font:600 26px/1.25 var(--display);border-left:6px solid var(--accent);padding:4px 0 4px 18px;margin:30px 0}
+.note{background:var(--panel);border:1px solid var(--rule);padding:14px 16px;font-size:16px;margin:22px 0}
+.note h3{margin-top:0}
+table.t{width:100%;border-collapse:collapse;font:400 13px/1.35 var(--mono)}
+table.t th{text-align:left;font-weight:500;color:var(--muted);border-bottom:2px solid var(--fg);padding:6px 8px 6px 0}
+table.t td{border-bottom:1px solid var(--rule);padding:7px 8px 7px 0;vertical-align:top}
+table.t td.num,table.t th.num{text-align:right;white-space:nowrap}
+.tablewrap{overflow-x:auto}
+.xgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px}
+@media (max-width:760px){.xgrid{grid-template-columns:minmax(0,1fr)}}
+details{margin:14px 0}
+summary{font:500 13px/1.4 var(--mono);cursor:pointer;color:var(--fg);padding:8px 0}
+.cta{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0}
+.cta a{font:500 13px/1 var(--mono);text-decoration:none;border:1px solid var(--fg);padding:11px 14px;border-radius:3px}
+.cta a.p{background:var(--accent);border-color:var(--accent);color:#fff}
+footer{border-top:6px double var(--fg);margin-top:56px;padding-top:16px;font:400 13px/1.55 var(--mono);color:var(--muted)}
+footer p{margin:0 0 10px}
+.theme{position:fixed;right:12px;bottom:12px;z-index:1002}
+@media print{.theme,.controls,.mapctl,.datebar{display:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="kicker"><b>Data study</b><span>Time and the sun</span><span>The world, {{meta.year|raw}}</span></div>
+<header class="hero">
+  <h1>How wrong is your <em>clock?</em></h1>
+  <svg class="mark" viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="54" fill="none" stroke="currentColor" stroke-width="2.5"/><g stroke="currentColor" stroke-width="2"><path d="M60 10v9M60 101v9M10 60h9M101 60h9"/></g><path d="M60 60 L60 26" stroke="currentColor" stroke-width="4" stroke-linecap="round"/><path d="M60 60 L84 72" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><circle cx="88" cy="34" r="13" fill="#E3A33B"/><g stroke="#E3A33B" stroke-width="2.5" stroke-linecap="round"><path d="M88 13v-6M88 61v-6M67 34h-6M115 34h-6M73 19l-4-4M107 53l-4-4M103 19l4-4"/></g></svg>
+  <p class="dek">Noon on the clock is meant to be when the sun is highest. For most of the world it is not even close. I measured the gap between clock time and the sun for every inhabited place on Earth under the time zone rules of {{meta.year|raw}}. Tap anywhere to see when the sun rises, peaks and sets there through the year.</p>
+</header>
+<div class="byline">Dr Tristan Hotham, Independent researcher · 2026 · Data: timezone-boundary-builder (ODbL), IANA tz database {{meta.tz_version|raw}}, Kontur Population (CC BY 4.0), GeoNames (CC BY 4.0), Natural Earth</div>
+
+<div class="stats">
+  <div><b style="color:var(--accent)">{{population.e_ann.ahead|pct}}</b><span>of the world's people live where the clock runs ahead of the sun, averaged over {{meta.year|raw}}</span></div>
+  <div><b style="color:var(--accent)">{{v.ahead_60_people_m|int}}m</b><span>people whose clock is more than an hour ahead of the sun on average</span></div>
+  <div><b style="color:#8E2A3B">{{country.Spain.e_ann|dur}}</b><span>Spain: the furthest ahead of any country of a million people or more</span></div>
+  <div><b style="color:var(--accent2)">{{stories.galicia_places.A Coruña.rise_late|raw}}</b><span>the latest sunrise of the year in A Coruña, Galicia, against {{stories.galicia_places.London.rise_late|raw}} in London</span></div>
+</div>
+
+<p class="lede">The sun is highest in the sky at a moment called solar noon. Before railways, towns set their clocks by it, so noon on the town clock was noon in the sky. Time zones replaced that with a handful of shared clocks, each one right for a single line of longitude and a little wrong everywhere else. Then politics and daylight saving pushed many clocks further from the sun, nearly always in the same direction: ahead. When the clock runs ahead of the sun, everything in the sky happens later by the clock. The sun rises later, stands highest later and sets later.</p>
+<p>How far ahead is easy to measure. The sun moves across the sky at 15 degrees of longitude an hour, so every place has its own solar time, four minutes later for each degree further east. Compare that with the clock on the wall and you have the gap. I did this for every 22 km hexagon of the world's population and every town of 1,000 people or more in GeoNames, day by day through {{meta.year|raw}}, using the official time zone boundaries and the rules in the IANA time zone database.</p>
+
+<h2 class="bleed"><span class="n">01 · The map</span>How far the clock runs ahead of the sun</h2>
+<div class="bleed">
+<div class="mapctl" role="toolbar" aria-label="Map view">
+  <div class="seg" id="modeSeg"><button class="btn" data-m="day" aria-pressed="true">On a date</button><button class="btn" data-m="ann">Year average</button><button class="btn" data-m="std">No daylight saving</button></div>
+  <div class="seg" id="quick"><button class="btn" data-d="today">Today</button><button class="btn" data-d="355">21 Dec</button><button class="btn" data-d="172">21 Jun</button></div>
+</div>
+<div class="datebar" id="datebar"><span class="datebig" id="dateBig">21 June</span><input type="range" id="doy" min="1" max="365" step="1" value="172" aria-label="Day of the year"></div>
+<div class="mapgrid">
+  <div>
+    <div class="mapbox"><div id="lmap" role="application" aria-label="World map of the gap between clock time and solar time"></div><div class="loading" id="loading">Loading the time zones…</div></div>
+    <div class="legend" id="legend"></div>
+    <div class="legcap"><span>clock behind the sun: sun early</span><span>clock ahead: sun late</span></div>
+  </div>
+  <aside class="side">
+    <div class="controls" style="margin-bottom:6px"><div class="searchbox"><input type="search" id="q" placeholder="Search a place, e.g. Vigo, Kashgar" autocomplete="off" aria-label="Search a place" aria-autocomplete="list" aria-controls="sug"><ul class="suggest" id="sug" role="listbox"></ul></div></div>
+    <div id="card"><p class="sub">Tap the map or search for a place.</p></div>
+  </aside>
+</div>
+<p class="src" id="mapNote">Colour shows clock time minus mean solar time. Orange: the clock is ahead, so the sun rises, peaks and sets late by the clock. Blue: the clock is behind. Grey: open sea or Antarctica. Time zones as used in {{meta.year|raw}} (tz database {{meta.tz_version|raw}}); Xinjiang is shown on Beijing time, its legal time. Scroll or pinch to zoom after tapping the map.</p>
+</div>
+
+<p>Two things jump out. First, the map is mostly orange. Few places keep a clock behind the sun, and almost none by much: only {{population.e_ann.behind_30|pct1}} of the world's people live where the clock is more than half an hour behind it on average. Second, the deepest colours come from political choices, not geography. All of China keeps Beijing time; all of India keeps one time; Spain keeps the time of Berlin; Argentina keeps a clock an hour ahead of its natural zone.</p>
+
+<h2><span class="n">02 · Who lives ahead</span>Three people in four live ahead of the sun</h2>
+<div class="figure"><p class="fig-h">The world's people by how far their clock runs ahead of the sun</p><p class="fig-sub">Share of {{v.world_people_bn|raw}} billion people (Kontur Population, 22 km hexagons) in 15 minute bands</p>
+<div class="controls"><div class="seg" id="histSeg"><button class="btn" data-k="e_ann" aria-pressed="true">Year average</button><button class="btn" data-k="e_std">No daylight saving</button><button class="btn" data-k="e_jun">21 June</button><button class="btn" data-k="e_dec">21 December</button></div></div>
+<div class="chart" id="cHist"></div></div>
+<p>Averaged over {{meta.year|raw}}, {{population.e_ann.ahead|pct}} of the world's people live where the clock is ahead of the sun, {{population.e_ann.ahead_30|pct}} more than half an hour ahead and {{population.e_ann.ahead_60|pct1}} more than an hour ahead. The typical person's clock runs {{population.e_ann.median|dur}} fast. Strip out daylight saving and the picture barely changes, because most people live in countries that do not change their clocks: {{population.e_std.ahead|pct}} still live ahead of the sun. Daylight saving matters most in June, when {{population.e_jun.ahead_60|pct1}} of the world's people have a clock more than an hour ahead. Only {{population.dst_share|pct}} of the world's people changed their clocks at all in {{meta.year|raw}}.</p>
+<p>Of the {{countries.n_1m|int}} countries with a million people or more, {{countries.n_1m_ahead|int}} run ahead of the sun on average and {{countries.n_1m_ahead_60|int}} by more than an hour. The countries that run behind tend to sit at the eastern edge of a zone (Qatar, Mozambique, Costa Rica, Bahrain) and only by about twenty minutes.</p>
+<div class="figure"><p class="fig-h">Clock minus sun by country</p><p class="fig-sub">Population-weighted average for {{meta.year|raw}}; the fifteen furthest ahead, some large countries and the five furthest behind (countries of a million people or more). The thin mark shows the gap without daylight saving.</p><div class="chart" id="cCountries"></div></div>
+
+<h2 class="bleed"><span class="n">03 · Galicia</span>The late mornings of the Atlantic edge of Spain</h2>
+<div class="bleed">
+<div class="figure" style="max-width:1000px;margin-inline:auto"><p class="fig-h">Sunrise by the clock through {{meta.year|raw}}</p><p class="fig-sub">Galicia (solid) against London, Madrid, Barcelona and Porto (thin). The steps are the clock changes in March and October.</p>
+<div class="controls"><div class="seg" id="galSeg"><button class="btn" data-k="rise" aria-pressed="true">Sunrise</button><button class="btn" data-k="set">Sunset</button></div></div>
+<div class="chart" id="cGal"></div></div>
+</div>
+<p>Anyone who has spent a winter in Galicia knows the feeling: it is still dark at what feels like the middle of the morning. The numbers bear it out. In A Coruña the latest sunrise of the year comes on {{stories.galicia_places.A Coruña.rise_late_date|raw}} at {{stories.galicia_places.A Coruña.rise_late|raw}}. Santiago de Compostela's latest is {{stories.galicia_places.Santiago de Compostela.rise_late|raw}} and Vigo's {{stories.galicia_places.Vigo.rise_late|raw}}. London, {{v.gal_lat_minus_london|f1}} degrees further north with much shorter winter days, never sees the sun later than {{stories.galicia_places.London.rise_late|raw}}. Madrid's latest is {{stories.galicia_places.Madrid.rise_late|raw}} and Barcelona's {{stories.galicia_places.Barcelona.rise_late|raw}}.</p>
+<p>The reason is longitude. Spain keeps Central European Time, the clock of Berlin and Rome, and Galicia is the westernmost part of mainland Spain, near 8.5 degrees west. The sun there runs {{stories.galicia_places.A Coruña.e_std|dur}} behind the clock in winter and {{stories.galicia_places.A Coruña.e_jun|dur}} behind it in summer. Over the year A Coruña's clock is {{stories.galicia_places.A Coruña.e_ann|dur}} ahead of the sun on average, and Vigo's {{stories.galicia_places.Vigo.e_ann|dur}}: the two most of any city of 100,000 people or more in the European group below. In {{meta.year|raw}} the sun rises after 9:00 on {{stories.galicia_places.A Coruña.days_rise_after_9|int}} days in A Coruña and after 8:30 on {{stories.galicia_places.A Coruña.days_rise_after_830|int}} days, almost a third of the year. In June solar noon falls at {{stories.galicia_places.A Coruña.noon_jun21|raw}} and the sun sets at {{stories.galicia_places.A Coruña.set_jun21|raw}}.</p>
+<div class="pull">Vigo and Porto see the sun rise at almost the same moment. By the clock, Vigo's sunrise comes an hour later.</div>
+<p>Portugal, next door, keeps the clock of London. Porto lies at almost exactly the same longitude as Vigo, so the two see the same sun, but Vigo's clock runs {{v.vigo_vs_porto_e|int}} minutes further ahead. Porto's latest sunrise is {{stories.galicia_places.Porto.rise_late|raw}}. Across the Miño at Tui, the clock jumps by an hour on the bridge.</p>
+<p>Among the {{stories.europe_s55_n|int}} cities of 100,000 people or more south of 55 degrees north in western, central and northern Europe (the EU apart from Cyprus and Malta, plus the UK, Norway and Switzerland), only Brest, at the tip of Brittany, has a later winter sunrise than A Coruña ({{stories.europe_s55_latest_rise.0.rise_late|raw}}). Vigo and Ourense come third and fourth. Every other city with a later sunrise is in the far north, in Finland, Norway, Sweden or Estonia, where the winter days are short. And Vigo has the latest solar noon of all {{stories.europe_n_100k|int}} cities in that group: {{stories.europe_latest_noon_jun21.0.noon_jun21|raw}} on 21 June.</p>
+
+<h2><span class="n">04 · Around the world</span>Where the clock and the sun part company</h2>
+<h3>Western China: one clock for nearly four time zones' worth of country</h3>
+<p>China's towns span {{stories.china.east_west_deg|int}} degrees of longitude, nearly enough for four time zones, but the whole country keeps Beijing time. In Fuyuan, on the Amur in the far north-east, the clock runs {{stories.china.east_place.e_std|dur}} behind the sun. In Kashgar, in the far west, it runs {{stories.china.kashgar.e_std|dur}} ahead, the most of any city of 100,000 or more in the world. Kashgar's latest sunrise is {{stories.china.kashgar.rise_late|raw}}, solar noon in winter comes at {{stories.china.kashgar.noon_dec21|raw}}, and in June the sun sets at {{stories.china.kashgar.set_jun21|raw}}. Many people in Xinjiang keep an unofficial local clock two hours behind Beijing, which the tz database records as "Asia/Urumqi". On that clock Kashgar would be {{stories.china.kashgar_xinjiang_time_e_std|dur}} ahead of the sun. The border with Afghanistan, in the Wakhan corridor, has the biggest clock jump between neighbours anywhere: {{v.afg_chn_jump|dur}}.</p>
+<h3>India: one time for almost 30 degrees of longitude</h3>
+<p>India Standard Time is set five and a half hours ahead of Greenwich, which is right for a line through the middle of the country. Among cities of 100,000 or more, the clock in Porbandar on the Gujarat coast runs {{stories.india.west.e_std|dur}} ahead of the sun, while in Tinsukia, in Assam, it runs {{stories.india.east.e_std|dur}} behind: the most behind of any city of that size in the world. That is {{stories.india.east_west_min|dur}} of difference. On 21 June the sun rises at {{stories.india.east.rise_jun21|raw}} in Tinsukia and {{stories.india.west.rise_jun21|raw}} in Porbandar.</p>
+<h3>Argentina: an hour ahead all year</h3>
+<p>Almost all of Argentina lies west of 52.5 degrees west, the natural western edge of UTC minus three, yet the country keeps UTC minus three all year. Buenos Aires runs {{stories.argentina.buenos_aires.e_std|dur}} ahead of the sun, Córdoba {{stories.argentina.cordoba.e_std|dur}} and Mendoza {{stories.argentina.mendoza.e_std|dur}}. In Ushuaia the midwinter sun does not rise until {{stories.argentina.ushuaia.rise_jun21|raw}}.</p>
+<h3>Russia: Moscow time reaches the Arctic Urals</h3>
+<p>Russia uses {{stories.russia.zones_std_offsets|len}} different offsets. Moscow time stretches a long way east: in Vorkuta, near the northern end of the Urals at 64 degrees east, the clock runs {{extremes.behind_any.2.e_std|dur}} behind the sun, and small places near it are the most behind of any town of 1,000 people or more on Earth. At the other end of the Russian range, Novosibirsk runs {{stories.russia.ahead_100k.2.e_std|dur}} ahead.</p>
+<h3>The UK: almost forty minutes from east to west</h3>
+<p>Greenwich is near the eastern edge of Britain, so most of the UK is a little ahead of the sun even in winter. In Lowestoft, the most easterly town, the winter clock runs {{stories.uk.lowestoft.e_std|dur}} behind the sun; in Enniskillen in County Fermanagh it runs {{stories.uk.west_ni.e_std|dur}} ahead. On 21 December the sun rises at {{stories.uk.london.rise_dec21|raw}} in London, {{stories.uk.belfast.rise_dec21|raw}} in Belfast and {{stories.uk.stornoway.rise_dec21|raw}} in Stornoway, {{v.stornoway_vs_london_dec|int}} minutes after London. With summer time, London's clock runs {{stories.uk.london.e_jun|dur}} ahead in June and Belfast's {{stories.uk.belfast.e_jun|dur}}.</p>
+
+<h2><span class="n">05 · Extremes</span>The most and least sun-wrong cities</h2>
+<div class="xgrid">
+<div><p class="fig-h">Clock furthest ahead</p><p class="fig-sub">Cities of 100,000 or more, year average</p><div class="tablewrap"><table class="t" id="tAhead"></table></div></div>
+<div><p class="fig-h">Clock furthest behind</p><p class="fig-sub">Cities of 100,000 or more, year average</p><div class="tablewrap"><table class="t" id="tBehind"></table></div></div>
+</div>
+<p>All ten of the cities furthest ahead are in Xinjiang. All ten furthest behind are in north-east India or north-east China, at the eastern ends of those same single national clocks. Of {{extremes.n_100k|int}} cities of 100,000 or more, {{cities_100k.ahead|pct}} run ahead of the sun over the year and {{cities_100k.ahead_60|pct}} more than an hour ahead.</p>
+
+<div class="note">
+<h3>Method and caveats</h3>
+<p><b>The gap.</b> Mean solar time at longitude L degrees east is UTC plus 4L minutes. The gap is the clock's offset from UTC minus 4L, folded into plus or minus 12 hours (so Tonga, on UTC plus 13 near 175 degrees west, is 40 minutes ahead, not a day). "Year average" averages the offset in force at midday on each day of {{meta.year|raw}}; "no daylight saving" uses the smaller of the offsets in force on 15 December {{meta.year|raw}} and 15 June 2027, which follows the rules as they stand at the end of {{meta.year|raw}} (for example Morocco on plain UTC from 20 September {{meta.year|raw}}, and the Canadian provinces that moved to permanent daylight time in November). The equation of time, which moves real solar noon by up to about 16 minutes either way through the year, is left out of the gap but included in every sunrise, sunset and solar noon time.</p>
+<p><b>Sun times.</b> The NOAA solar calculator equations, with sunrise and sunset when the top of the sun's disc meets a flat horizon (sun centre 0.833 degrees below it, standard refraction). They agree with the astral Python package to within a minute. Hills, buildings and altitude are ignored.</p>
+<p><b>Zones and people.</b> Time zone boundaries: timezone-boundary-builder release 2026a (built from OpenStreetMap). Rules: IANA tz database {{meta.tz_version|raw}}. Population: Kontur Population (November 2023), 22 km hexagons, each placed in the zone containing its centre ({{population.hexes|int}} hexagons with people). Towns: GeoNames places of 1,000 or more ({{meta.places_used|int}}). GeoNames' own time zone gives the same clock on every day of {{meta.year|raw}} for {{meta.geonames_tz_agree|pct1}} of them. On the map, zones are stored on a 0.1 degree grid, so a tap within a few kilometres of a zone boundary can land in the neighbouring zone.</p>
+<p><b>Legal and lived time.</b> I use legal time throughout. Xinjiang is on Beijing time; the informal Xinjiang time used by many local people is given as an alternative. Elsewhere, shops, schools and offices may adapt their hours to the sun, which a clock map cannot show.</p>
+</div>
+
+<div class="cta"><a class="p" href="https://doi.org/10.5281/zenodo.23757706">Read the paper</a><a href="https://github.com/Tristan-Hotham/clock-vs-sun">Data and code</a><a href="https://blog.tristanhotham.com/2026/10/29/clock-vs-sun/">Blog post</a></div>
+
+<details><summary>Sources and licences</summary>
+<p class="src">Time zone boundaries: Evan Siroky, timezone-boundary-builder, release 2026a, https://github.com/evansiroky/timezone-boundary-builder, Open Database License (ODbL) 1.0, built from OpenStreetMap data © OpenStreetMap contributors. Time zone rules: IANA time zone database version {{meta.tz_version|raw}} (public domain), via the Python tzdata package. Population: Kontur Population dataset, 22 km H3 hexagons, release 1 November 2023, via the Humanitarian Data Exchange, CC BY 4.0. Towns: GeoNames cities1000, retrieved {{meta.geonames_retrieved|raw}}, CC BY 4.0. Country outlines: Natural Earth 1:10m and 1:50m (public domain). Solar equations: NOAA Global Monitoring Laboratory solar calculator. Hill shading: AWS Terrain Tiles (Mapzen terrarium). Optional base maps: Tiles © Esri.</p>
+</details>
+
+<footer>
+  <p>Dr Tristan Hotham, Independent researcher. ORCID 0000-0003-4931-9349. Cite as: Hotham, T. (2026) How wrong is your clock? Clock time against solar time for the world's people in 2026. https://doi.org/10.5281/zenodo.23757706</p>
+  <p>I wrote the text, with drafting and editing assistance from Claude (Anthropic), which also helped prepare the analysis code. I reviewed and checked all text and results.</p>
+  <p>Text, figures and derived data: CC BY 4.0, except the time zone lines and grid, which are derived from timezone-boundary-builder and shared under the ODbL 1.0. Code: MIT. Other studies: <a href="https://maps.tristanhotham.com/sun-and-rain/">Sun and rain</a>, <a href="https://maps.tristanhotham.com/eclipse-towns/">Eclipse towns</a>, <a href="https://blog.tristanhotham.com/">all posts</a>.</p>
+</footer>
+</div>
+<div class="tip" id="tip"></div>
+<button class="btn theme" id="theme" aria-label="Toggle dark mode">◐</button>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+"use strict";
+const R = /*RESULTS*/;
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const fmt = n => Math.round(n).toLocaleString("en-GB");
+const isDark = () => document.documentElement.dataset.theme === "dark" || (document.documentElement.dataset.theme !== "light" && matchMedia("(prefers-color-scheme: dark)").matches);
+const tip = $("tip");
+function showTip(h, x, y) { tip.innerHTML = h; tip.style.display = "block"; const w = tip.offsetWidth; x = Math.max(w / 2 + 8, Math.min(innerWidth - w / 2 - 8, x)); tip.style.left = x + scrollX + "px"; tip.style.top = y + scrollY + "px"; }
+function hideTip() { tip.style.display = "none"; }
+const redraws = [];
+function resp(box, render) { let last = 0; const go = force => { const w = Math.max(280, Math.round(box.clientWidth)); if (!force && Math.abs(w - last) < 4) return; last = w; box.innerHTML = ""; render(w, w < 560); }; new ResizeObserver(() => go()).observe(box); go(); redraws.push(() => go(true)); }
+const SVGNS = "http://www.w3.org/2000/svg";
+function svg(w, h) { const s = document.createElementNS(SVGNS, "svg"); s.setAttribute("viewBox", `0 0 ${w} ${h}`); s.setAttribute("role", "img"); return s; }
+function el(p, tag, a, txt) { const e = document.createElementNS(SVGNS, tag); for (const k in a) e.setAttribute(k, a[k]); if (txt != null) e.textContent = txt; p.appendChild(e); return e; }
+(function () { const k = "cvs_theme"; let t = null; try { t = localStorage.getItem(k); } catch (e) {} if (t) document.documentElement.dataset.theme = t;
+  $("theme").onclick = () => { const d = isDark() ? "light" : "dark"; document.documentElement.dataset.theme = d; try { localStorage.setItem(k, d); } catch (e) {} redraws.forEach(f => f()); if (window.mapRestyle) mapRestyle(); }; })();
+
+/* ===== time helpers ===== */
+const YEAR = R.meta.year;
+const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const MDAYS = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+function doyDate(d) { let m = 0; while (d > MDAYS[m]) { d -= MDAYS[m]; m++; } return [d, m]; }
+const dateLabel = d => { const [dd, m] = doyDate(d); return dd + " " + MONTHS[m]; };
+function hm(min) { if (min == null || isNaN(min)) return "none"; let m = Math.round(min); m = ((m % 1440) + 1440) % 1440; return Math.floor(m / 60) + ":" + String(m % 60).padStart(2, "0"); }
+function dur(min) { const s = min < 0 ? "behind" : "ahead"; let m = Math.round(Math.abs(min)); const h = Math.floor(m / 60); m %= 60; return (h ? h + " h " + (m ? m + " min" : "") : m + " min").trim() + " " + s; }
+const wrap = e => ((e + 720) % 1440 + 1440) % 1440 - 720;
+const offStr = m => "UTC" + (m < 0 ? " minus " : " plus ") + Math.floor(Math.abs(m) / 60) + (Math.abs(m) % 60 ? ":" + String(Math.abs(m) % 60).padStart(2, "0") : "");
+
+/* NOAA solar equations, the same as code/common.py; returns minutes after 00:00 UTC */
+function sunEq(jd) {
+  const T = (jd - 2451545) / 36525, rad = Math.PI / 180;
+  const L0 = ((280.46646 + T * (36000.76983 + T * 0.0003032)) % 360 + 360) % 360;
+  const M = 357.52911 + T * (35999.05029 - 0.0001537 * T), e = 0.016708634 - T * (0.000042037 + 0.0000001267 * T), Mr = M * rad;
+  const C = Math.sin(Mr) * (1.914602 - T * (0.004817 + 0.000014 * T)) + Math.sin(2 * Mr) * (0.019993 - 0.000101 * T) + Math.sin(3 * Mr) * 0.000289;
+  const om = 125.04 - 1934.136 * T, lam = L0 + C - 0.00569 - 0.00478 * Math.sin(om * rad);
+  const eps0 = 23 + (26 + (21.448 - T * (46.815 + T * (0.00059 - T * 0.001813))) / 60) / 60, eps = eps0 + 0.00256 * Math.cos(om * rad);
+  const decl = Math.asin(Math.sin(eps * rad) * Math.sin(lam * rad)) / rad;
+  const y = Math.tan(eps * rad / 2) ** 2, L0r = L0 * rad;
+  const eot = 4 * (y * Math.sin(2 * L0r) - 2 * e * Math.sin(Mr) + 4 * e * y * Math.sin(Mr) * Math.cos(2 * L0r) - 0.5 * y * y * Math.sin(4 * L0r) - 1.25 * e * e * Math.sin(2 * Mr)) / rad;
+  return [eot, decl];
+}
+const JD0 = 2461041.5; // 1 January 2026, 00:00 UTC
+function sunTimes(lat, lon, doy) {
+  const jd0 = JD0 + doy - 1, rad = Math.PI / 180;
+  let noon = 720 - 4 * lon; for (let i = 0; i < 2; i++) noon = 720 - 4 * lon - sunEq(jd0 + noon / 1440)[0];
+  const out = [];
+  for (const sg of [-1, 1]) { let t = noon, ok = true;
+    for (let i = 0; i < 3; i++) { const [eot, dec] = sunEq(jd0 + t / 1440); const c = (Math.sin(-0.833 * rad) - Math.sin(lat * rad) * Math.sin(dec * rad)) / (Math.cos(lat * rad) * Math.cos(dec * rad)); if (c > 1 || c < -1) { ok = false; break; } t = 720 - 4 * lon - eot + sg * 4 * Math.acos(c) / rad; }
+    out.push(ok ? t : NaN); }
+  return [noon, out[0], out[1]];
+}
+
+/* ===== data ===== */
+let D = null, Z = null, SRCG = null, lmap = null;
+const S = { mode: "day", doy: 172, sel: null, histK: "e_ann", galK: "rise" };
+function zoneOffset(z, doy) { const tr = Z[z].tr; let o = tr[0][1]; for (const t of tr) { if (t[0] <= doy) o = t[1]; else break; } return o; }
+function zoneAnn(z) { if (Z[z]._ann != null) return Z[z]._ann; let s = 0; for (let d = 1; d <= 365; d++) s += zoneOffset(z, d); return Z[z]._ann = s / 365; }
+function zoneVal(z) { return S.mode === "std" ? Z[z].std : S.mode === "ann" ? zoneAnn(z) : zoneOffset(z, S.doy); }
+function zoneAt(lat, lon) { const G = D.grid; if (lat > G.n || lat < G.s) return -1; const r = Math.floor((G.n - lat) / G.res), c = Math.min(G.w - 1, Math.floor((lon + 180) / G.res)); return SRCG[r * G.w + c] - 1; }
+
+/* ===== colours ===== */
+const BREAKS = [-60, -30, 0, 30, 60, 90, 120, 150];
+const COLS = ["#24527F", "#5D8EBD", "#B7D2E6", "#FBE6A9", "#F5C064", "#EC9038", "#D8602A", "#B0362A", "#6E1F3C"];
+const LABS = ["", "1 h behind", "30 min", "0", "30 min", "1 h", "1 h 30", "2 h", "2 h 30", ""];
+function cls(e) { let i = 0; while (i < BREAKS.length && e >= BREAKS[i]) i++; return i; }
+const RGB = COLS.map(h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]);
+function legend() {
+  $("legend").innerHTML = COLS.map((c, i) => `<div><i style="background:${c}"></i><span>${i === 0 ? "&lt; 1 h behind" : i === COLS.length - 1 ? "&gt; 2 h 30" : ""}</span></div>`).join("");
+  const box = $("legend"); box.style.position = "relative";
+  const ticks = ["1 h", "30", "0", "30", "1 h", "1 h 30", "2 h", "2 h 30"];
+  ticks.forEach((t, i) => { const s = document.createElement("span"); s.textContent = t; s.style.cssText = `position:absolute;top:14px;left:${(i + 1) / COLS.length * 100}%;transform:translateX(-50%);font:400 10.5px var(--mono);color:var(--muted)`; box.appendChild(s); });
+  box.querySelectorAll(":scope > div > span").forEach(s => s.style.visibility = "hidden"); box.style.paddingBottom = "16px";
+}
+
+/* ===== map ===== */
+const LY = { base: "plain", hills: true, hillK: 45, names: true, nameLvl: 0, lines: true, lineK: 40, tz: true, tzK: 55, colour: 85 };
+const LYDEF = { ...LY };
+try { Object.assign(LY, JSON.parse(localStorage.getItem("cvs_layers") || "{}")); } catch (e) {}
+const saveLY = () => { try { localStorage.setItem("cvs_layers", JSON.stringify(LY)); } catch (e) {} };
+let tiles = {}, landL = null, borderL = null, tzL = null, hillL = null, hillCv = null, HILLIMG = null, nameL = null, colL = null, colCv = null, MAP = null, selM = null;
+const WORLD = window.L ? L.latLngBounds([-85.0511, -180], [85.0511, 180]) : null;
+const CanvasOverlay = window.L ? L.ImageOverlay.extend({ _initImage() { const c = this._image = this._url; L.DomUtil.addClass(c, "leaflet-image-layer"); if (this._zoomAnimated) L.DomUtil.addClass(c, "leaflet-zoom-animated"); c.onselectstart = L.Util.falseFn; c.onmousemove = L.Util.falseFn; } }) : null;
+const merc = lat => Math.log(Math.tan(Math.PI / 4 + lat * Math.PI / 360));
+const imerc = y => (2 * Math.atan(Math.exp(y)) - Math.PI / 2) * 180 / Math.PI;
+function initColourCanvas() {
+  const G = D.grid, W = innerWidth < 700 ? 2400 : 3600, y0 = merc(G.n), y1 = merc(G.s), H = Math.round(W * (y0 - y1) / (2 * Math.PI));
+  colCv = document.createElement("canvas"); colCv.width = W; colCv.height = H;
+  const rows = new Int32Array(H), cols = new Int32Array(W), lon4 = new Float32Array(W);
+  for (let r = 0; r < H; r++) { const lat = imerc(y0 - (r + .5) / H * (y0 - y1)); rows[r] = Math.min(G.h - 1, Math.floor((G.n - lat) / G.res)) * G.w; }
+  for (let c = 0; c < W; c++) { const lon = -180 + (c + .5) * 360 / W; cols[c] = Math.min(G.w - 1, Math.floor((lon + 180) / G.res)); lon4[c] = 4 * lon; }
+  MAP = { W, H, rows, cols, lon4, img: colCv.getContext("2d").createImageData(W, H) };
+}
+function renderColours() {
+  if (!MAP) return;
+  const { W, H, rows, cols, lon4, img } = MAP, d = img.data, off = new Float32Array(Z.length);
+  for (let z = 0; z < Z.length; z++) off[z] = zoneVal(z);
+  const a = Math.round(255 * LY.colour / 100);
+  let p = 0;
+  for (let r = 0; r < H; r++) { const base = rows[r];
+    for (let c = 0; c < W; c++, p += 4) { const z = SRCG[base + cols[c]];
+      if (!z) { d[p + 3] = 0; continue; }
+      const e = wrap(off[z - 1] - lon4[c]), k = RGB[cls(e)];
+      d[p] = k[0]; d[p + 1] = k[1]; d[p + 2] = k[2]; d[p + 3] = a; } }
+  colCv.getContext("2d").putImageData(img, 0, 0);
+  if (colL && colL._image) colL._image.style.opacity = 1;
+}
+function composeHills() {
+  if (!HILLIMG) return;
+  const k = LY.hillK / 100, dark = isDark() || LY.base === "dark", n = HILLIMG.width;
+  const g = hillCv.getContext("2d"), out = g.createImageData(n, n), s = HILLIMG.data, d = out.data;
+  const sh = dark ? [0, 0, 0] : [40, 36, 30];
+  for (let i = 0; i < s.length; i += 4) {
+    const a = s[i] / 255, h = s[i + 1] / 255;
+    if (a >= h * .6) { d[i] = sh[0]; d[i + 1] = sh[1]; d[i + 2] = sh[2]; d[i + 3] = Math.min(255, a * 255 * k * (dark ? 1.1 : .9)); }
+    else { d[i] = 255; d[i + 1] = 255; d[i + 2] = 255; d[i + 3] = h * 255 * k * (dark ? .25 : .6); }
+  }
+  g.putImageData(out, 0, 0);
+}
+function loadHills() {
+  if (HILLIMG) return Promise.resolve();
+  return new Promise((ok, bad) => { const im = new Image(); im.onload = () => { const c = document.createElement("canvas"); c.width = im.width; c.height = im.height; const x = c.getContext("2d", { willReadFrequently: true }); x.drawImage(im, 0, 0); HILLIMG = x.getImageData(0, 0, c.width, c.height); hillCv.width = c.width; hillCv.height = c.height; ok(); }; im.onerror = bad; im.src = "data/hills.png"; });
+}
+function placeNames() {
+  if (!nameL) return; nameL.clearLayers(); if (!LY.names || !D) return;
+  const z = lmap.getZoom(), bb = lmap.getBounds().pad(.05), lvl = LY.nameLvl;
+  const minPop = lvl === 0 ? (z >= 7 ? 50000 : z >= 6 ? 150000 : z >= 5 ? 400000 : z >= 4 ? 1500000 : 4000000) : lvl === 1 ? (z >= 7 ? 15000 : z >= 6 ? 40000 : z >= 5 ? 100000 : z >= 4 ? 400000 : 1500000) : (z >= 6 ? 5000 : z >= 5 ? 30000 : z >= 4 ? 100000 : 500000);
+  const boxes = [], cap = lvl === 2 ? 420 : 240; let n = 0;
+  for (const t of D.places) {
+    if (t[4] < minPop) break;
+    if (!bb.contains([t[2], t[3]])) continue;
+    const p = lmap.latLngToContainerPoint([t[2], t[3]]), rk = t[4] >= 5e6 ? 3 : t[4] >= 1e6 ? 2 : t[4] >= 2e5 ? 1 : 0, fs = rk >= 3 ? 12 : 11;
+    const bx = [p.x - 4, p.y - 8, p.x + 10 + t[0].length * fs * .6, p.y + 7];
+    if (boxes.some(o => bx[0] < o[2] && bx[2] > o[0] && bx[1] < o[3] && bx[3] > o[1])) continue;
+    boxes.push(bx);
+    L.marker([t[2], t[3]], { pane: "names", interactive: false, keyboard: false, icon: L.divIcon({ className: "town r" + rk, html: `<i></i>${esc(t[0])}`, iconSize: null, iconAnchor: [3, 6] }) }).addTo(nameL);
+    if (++n >= cap) break;
+  }
+}
+function applyLayers() {
+  for (const k in tiles) { if (k === LY.base) tiles[k].addTo(lmap); else tiles[k].remove(); }
+  lmap.getContainer().classList.toggle("sat", LY.base === "satellite");
+  lmap.getContainer().style.background = LY.base === "plain" ? css("--sea") : (LY.base === "dark" ? "#2b2b2b" : LY.base === "satellite" ? "#0b1a26" : "#e8e8e8");
+  if (LY.base === "plain") landL.addTo(lmap); else landL.remove();
+  landL.setStyle({ fillColor: css("--land") });
+  renderColours();
+  if (LY.hills) { loadHills().then(() => { composeHills(); hillL.addTo(lmap); }).catch(() => {}); } else hillL.remove();
+  const lc = LY.base === "satellite" || LY.base === "dark" || isDark() ? "#f2eee6" : css("--line");
+  if (LY.lines) { borderL.addTo(lmap); borderL.setStyle({ color: lc, opacity: .15 + .85 * LY.lineK / 100, weight: .4 + LY.lineK / 100 }); } else borderL.remove();
+  if (LY.tz) { tzL.addTo(lmap); tzL.setStyle({ color: lc, opacity: .2 + .8 * LY.tzK / 100, weight: .6 + 1.2 * LY.tzK / 100, dashArray: "4 3" }); } else tzL.remove();
+  if (LY.names) nameL.addTo(lmap); else nameL.remove();
+  placeNames();
+}
+function initLayers() {
+  const Ctl = L.Control.extend({ options: { position: "topright" }, onAdd() {
+    const d = L.DomUtil.create("div"); L.DomEvent.disableClickPropagation(d); L.DomEvent.disableScrollPropagation(d);
+    d.innerHTML = `<button class="lyrBtn" aria-expanded="false" aria-controls="lyrPanel">Map layers</button>
+<div class="lyrPanel" id="lyrPanel" hidden>
+ <div class="row"><label for="lyBase" style="font-weight:600">Base map</label><div class="sub"><select id="lyBase" aria-label="Base map"><option value="plain">Plain paper (offline)</option><option value="light">Light grey (Esri)</option><option value="dark">Dark grey (Esri)</option><option value="satellite">Satellite (Esri)</option></select></div></div>
+ <div class="row"><label><input type="checkbox" id="lyHills"> Hills and mountains</label><div class="sub"><span>strength</span><input type="range" id="lyHillK" min="10" max="100" step="5" aria-label="Hill shading strength"></div></div>
+ <div class="row"><label><input type="checkbox" id="lyNames"> Place names</label><div class="sub"><span>how many</span><select id="lyNameLvl" aria-label="How many place names"><option value="0">Big cities only</option><option value="1">Cities and towns</option><option value="2">Lots</option></select></div></div>
+ <div class="row"><label><input type="checkbox" id="lyLines"> Borders and coasts</label><div class="sub"><span>strength</span><input type="range" id="lyLineK" min="10" max="100" step="5" aria-label="Border line strength"></div></div>
+ <div class="row"><label><input type="checkbox" id="lyTz"> Clock change lines</label><div class="sub"><span>strength</span><input type="range" id="lyTzK" min="10" max="100" step="5" aria-label="Time zone line strength"></div></div>
+ <div class="row"><label style="font-weight:600">Colour</label><div class="sub"><span>strength</span><input type="range" id="lyColour" min="20" max="100" step="5" aria-label="Colour strength"></div></div>
+ <button class="reset" id="lyReset">Reset layers</button>
+</div>`;
+    return d; } });
+  lmap.addControl(new Ctl());
+  const q = $, btn = lmap.getContainer().querySelector(".lyrBtn"), pan = q("lyrPanel");
+  btn.onclick = () => { const o = pan.hidden; pan.hidden = !o; btn.setAttribute("aria-expanded", o); };
+  const sync = () => { q("lyBase").value = LY.base; q("lyHills").checked = LY.hills; q("lyHillK").value = LY.hillK; q("lyNames").checked = LY.names; q("lyNameLvl").value = LY.nameLvl; q("lyLines").checked = LY.lines; q("lyLineK").value = LY.lineK; q("lyTz").checked = LY.tz; q("lyTzK").value = LY.tzK; q("lyColour").value = LY.colour; };
+  const on = (id, ev, f) => q(id).addEventListener(ev, e => { f(e.target); saveLY(); applyLayers(); });
+  on("lyBase", "change", t => { LY.base = t.value; if (t.value === "satellite") { LY.hills = false; q("lyHills").checked = false; } });
+  on("lyHills", "change", t => LY.hills = t.checked); on("lyHillK", "input", t => { LY.hillK = +t.value; LY.hills = true; q("lyHills").checked = true; });
+  on("lyNames", "change", t => LY.names = t.checked); on("lyNameLvl", "change", t => { LY.nameLvl = +t.value; LY.names = true; q("lyNames").checked = true; });
+  on("lyLines", "change", t => LY.lines = t.checked); on("lyLineK", "input", t => { LY.lineK = +t.value; LY.lines = true; q("lyLines").checked = true; });
+  on("lyTz", "change", t => LY.tz = t.checked); on("lyTzK", "input", t => { LY.tzK = +t.value; LY.tz = true; q("lyTz").checked = true; });
+  on("lyColour", "input", t => LY.colour = +t.value);
+  q("lyReset").onclick = () => { Object.assign(LY, LYDEF); saveLY(); sync(); applyLayers(); };
+  sync();
+  lmap.on("zoomend moveend", placeNames);
+}
+window.mapRestyle = () => { if (!lmap) return; applyLayers(); if (S.sel) drawCard(); };
+
+/* ===== mode and date ===== */
+function setPressed(id, attr, val) { document.querySelectorAll(`#${id} .btn`).forEach(b => b.setAttribute("aria-pressed", b.dataset[attr] === String(val) ? "true" : "false")); }
+function todayDoy() { const t = new Date(), s = new Date(t.getFullYear(), 0, 1); return Math.min(365, Math.floor((t - s) / 864e5) + 1); }
+function update() {
+  setPressed("modeSeg", "m", S.mode);
+  $("datebar").style.opacity = S.mode === "day" ? 1 : .45;
+  $("dateBig").textContent = S.mode === "day" ? dateLabel(S.doy) : S.mode === "ann" ? "Year average" : "Winter clock";
+  $("doy").value = S.doy;
+  renderColours();
+  if (S.sel) drawCard();
+}
+
+/* ===== place card ===== */
+function nearestPlace(lat, lon, maxKm) {
+  let best = null, bd = 1e9; const k = Math.cos(lat * Math.PI / 180);
+  for (const p of D.places) { const dy = p[2] - lat, dx = (p[3] - lon) * k, d = dy * dy + dx * dx; if (d < bd) { bd = d; best = p; } }
+  return best && Math.sqrt(bd) * 111 <= maxKm ? best : null;
+}
+function yearSeries(lat, lon, z) {
+  const rise = [], set = [], noon = [];
+  for (let d = 1; d <= 365; d++) { const o = zoneOffset(z, d), [n, r, s] = sunTimes(lat, lon, d); rise.push(r + o); set.push(s + o); noon.push(n + o); }
+  return { rise, set, noon };
+}
+function selectAt(lat, lon, name, fly) {
+  const z = zoneAt(lat, lon);
+  if (z < 0) { S.sel = { lat, lon, z: -1, name: name || "Open sea" }; drawCard(); return; }
+  const np = name ? null : nearestPlace(lat, lon, 25);
+  S.sel = { lat, lon, z, name: name || (np ? np[0] : `${Math.abs(lat).toFixed(2)}°${lat >= 0 ? "N" : "S"}, ${Math.abs(lon).toFixed(2)}°${lon >= 0 ? "E" : "W"}`), near: !name && np, cc: np ? np[1] : "" };
+  S.sel.ser = yearSeries(lat, lon, z);
+  if (lmap) { if (selM) selM.remove(); selM = L.circleMarker([lat, lon], { radius: 7, color: "#fff", weight: 2.5, fillColor: "#1E1B18", fillOpacity: 1 }).addTo(lmap); if (fly) lmap.flyTo([lat, lon], Math.max(lmap.getZoom(), 5), { duration: .6 }); }
+  drawCard();
+}
+let LONDON = null;
+function drawCard() {
+  const s = S.sel; if (!s) return;
+  if (s.z < 0) { $("card").innerHTML = `<div class="big">${esc(s.name)}</div><p class="sub">No time zone here on the map (open sea or Antarctica).</p>`; return; }
+  const zn = Z[s.z], o = zoneVal(s.z), e = wrap(o - 4 * s.lon), d = S.doy;
+  const [n, r, st] = sunTimes(s.lat, s.lon, d), od = zoneOffset(s.z, d);
+  const lr = s.ser.rise.reduce((a, v, i) => (!isNaN(v) && v > a[0] ? [v, i] : a), [-1e9, 0]);
+  const what = S.mode === "day" ? "on " + dateLabel(d) : S.mode === "ann" ? "on average over the year" : "with no daylight saving";
+  const col = COLS[cls(e)];
+  const alt = zn.alt ? `<p class="sub">Legal time is Beijing time. On informal ${esc(zn.alt.name)} (${offStr(zn.alt.std)}) the gap would be ${esc(dur(wrap(zn.alt.std - 4 * s.lon)))}.</p>` : "";
+  const dst = zn.tr.length > 1 ? `Clocks change in ${YEAR}: ${zn.tr.slice(1).map(t => dateLabel(t[0]) + " to " + offStr(t[1])).join("; ")}.` : `No clock changes in ${YEAR}.`;
+  $("card").innerHTML = `<div class="big">${esc(s.name)}</div><p class="sub">${s.near ? "Nearest town within 25 km. " : ""}Time zone ${esc(zn.id)}, ${offStr(od)} on ${dateLabel(d)}.</p>
+  <div class="gap" style="color:${[2, 3, 4, 5].includes(cls(e)) ? "var(--fg)" : col}">${esc(dur(e))}</div><p class="sub">Clock against the sun ${what}.</p>${alt}
+  <dl class="kv"><dt>On ${esc(dateLabel(d))}</dt><dd></dd><dt>Sunrise</dt><dd>${hm(r + od)}</dd><dt>Solar noon</dt><dd>${hm(n + od)}</dd><dt>Sunset</dt><dd>${hm(st + od)}</dd><dt>Latest sunrise</dt><dd>${lr[0] > -1e9 ? hm(lr[0]) + ", " + dateLabel(lr[1] + 1) : "none"}</dd></dl>
+  <h4>Sunrise and sunset through ${YEAR}</h4><div class="chart" id="cardChart"></div><p class="src" style="margin-top:4px">${dst} Grey lines: London.</p>`;
+  yearChart($("cardChart"), s.ser, LONDON, d);
+}
+function yearChart(box, ser, cmp, mark) {
+  resp(box, (W) => {
+    const H = 210, L = 34, Rr = 6, T = 8, B = 20, x = d => L + (W - L - Rr) * (d - .5) / 365;
+    const all = [...ser.rise, ...ser.set, ...(cmp ? [...cmp.rise, ...cmp.set] : [])].filter(v => !isNaN(v));
+    let lo = Math.floor(Math.min(...all) / 120) * 120, hi = Math.ceil(Math.max(...all) / 120) * 120; if (!isFinite(lo)) { lo = 0; hi = 1440; }
+    const y = v => T + (H - T - B) * (v - lo) / (hi - lo);
+    const s = svg(W, H);
+    for (let t = lo; t <= hi; t += 120) { el(s, "line", { x1: L, x2: W - Rr, y1: y(t), y2: y(t), stroke: css("--rule") }); el(s, "text", { x: L - 4, y: y(t) + 4, "text-anchor": "end", class: "lab s m" }, hm(t)); }
+    let acc = 0; MDAYS.forEach((m, i) => { if (i % 2 === 0) el(s, "text", { x: x(acc + m / 2), y: H - 5, "text-anchor": "middle", class: "lab s m" }, MONTHS[i].slice(0, 3)); acc += m; });
+    const path = arr => { let d = "", pen = false; arr.forEach((v, i) => { if (isNaN(v)) { pen = false; return; } d += (pen ? "L" : "M") + x(i + 1).toFixed(1) + " " + y(v).toFixed(1); pen = true; }); return d; };
+    let area = ""; ser.rise.forEach((v, i) => { if (!isNaN(v)) area += (area ? "L" : "M") + x(i + 1).toFixed(1) + " " + y(v).toFixed(1); });
+    for (let i = 364; i >= 0; i--) if (!isNaN(ser.set[i])) area += "L" + x(i + 1).toFixed(1) + " " + y(ser.set[i]).toFixed(1);
+    if (area) el(s, "path", { d: area + "Z", fill: "#F5C064", opacity: .28 });
+    if (cmp) for (const k of ["rise", "set"]) el(s, "path", { d: path(cmp[k]), fill: "none", stroke: css("--muted"), "stroke-width": 1, opacity: .7 });
+    el(s, "path", { d: path(ser.rise), fill: "none", stroke: "#D9661F", "stroke-width": 2 });
+    el(s, "path", { d: path(ser.set), fill: "none", stroke: "#2F5F8F", "stroke-width": 2 });
+    el(s, "path", { d: path(ser.noon), fill: "none", stroke: css("--fg"), "stroke-width": 1, "stroke-dasharray": "3 3" });
+    el(s, "line", { x1: x(mark), x2: x(mark), y1: T, y2: H - B, stroke: css("--fg"), "stroke-width": 1, opacity: .5 });
+    const hov = el(s, "rect", { x: L, y: T, width: W - L - Rr, height: H - T - B, fill: "transparent" });
+    hov.addEventListener("mousemove", ev => { const rc = s.getBoundingClientRect(), d = Math.max(1, Math.min(365, Math.round(((ev.clientX - rc.left) * W / rc.width - L) / (W - L - Rr) * 365 + .5))); showTip(`<b>${dateLabel(d)}</b><br>sunrise ${hm(ser.rise[d - 1])}<br>solar noon ${hm(ser.noon[d - 1])}<br>sunset ${hm(ser.set[d - 1])}`, ev.pageX - scrollX, ev.pageY - scrollY); });
+    hov.addEventListener("mouseleave", hideTip);
+    box.appendChild(s);
+  });
+}
+
+/* ===== charts ===== */
+function histChart() {
+  resp($("cHist"), (W, narrow) => {
+    const H = narrow ? 240 : 280, L = 40, Rr = 8, T = 10, B = 34, h = R.hist, b = h.bins, v = h[S.histK], n = v.length;
+    const max = Math.max(...["e_ann", "e_std", "e_jun", "e_dec"].flatMap(k => h[k]));
+    const x = i => L + (W - L - Rr) * i / n, y = val => T + (H - T - B) * (1 - val / max);
+    const s = svg(W, H);
+    for (const t of [0, .05, .1, .15, .2, .25].filter(t => t <= max)) { el(s, "line", { x1: L, x2: W - Rr, y1: y(t), y2: y(t), stroke: css("--rule") }); el(s, "text", { x: L - 5, y: y(t) + 4, "text-anchor": "end", class: "lab s m" }, Math.round(t * 100) + "%"); }
+    v.forEach((val, i) => { const mid = (b[i] + b[i + 1]) / 2, r = el(s, "rect", { x: x(i) + .5, y: y(val), width: Math.max(1, x(i + 1) - x(i) - 1), height: H - B - y(val), fill: COLS[cls(mid)], stroke: isDark() ? "none" : "rgba(0,0,0,.12)" });
+      r.addEventListener("mousemove", ev => showTip(`${b[i]} to ${b[i + 1]} min: ${(val * 100).toFixed(1)}% of people`, ev.pageX - scrollX, ev.pageY - scrollY)); r.addEventListener("mouseleave", hideTip); });
+    const zx = x((0 - b[0]) / 15); el(s, "line", { x1: zx, x2: zx, y1: T, y2: H - B, stroke: css("--fg"), "stroke-width": 1.5 });
+    for (let m = -120; m <= 300; m += 60) { const xx = x((m - b[0]) / 15); el(s, "text", { x: xx, y: H - B + 14, "text-anchor": "middle", class: "lab s m" }, m === 0 ? "0" : (m > 0 ? "+" : "") + m / 60 + " h"); }
+    el(s, "text", { x: W - Rr, y: H - 4, "text-anchor": "end", class: "lab s m" }, "clock ahead of the sun");
+    el(s, "text", { x: L, y: H - 4, class: "lab s m" }, "behind");
+    $("cHist").appendChild(s);
+  });
+}
+function countryChart() {
+  resp($("cCountries"), (W, narrow) => {
+    const rows = R.country_chart, lw = narrow ? 112 : 170, rh = 22, H = rows.length * rh + 30;
+    const lo = -60, hi = 120, X = v => lw + (W - lw - 50) * (v - lo) / (hi - lo);
+    const s = svg(W, H);
+    for (let t = lo; t <= hi; t += 30) { el(s, "line", { x1: X(t), x2: X(t), y1: 0, y2: H - 22, stroke: t === 0 ? css("--fg") : css("--rule") }); if (!narrow || t % 60 === 0) el(s, "text", { x: X(t), y: H - 6, "text-anchor": "middle", class: "lab s m" }, t === 0 ? "0" : (t > 0 ? "+" : "") + (t % 60 ? (t / 60).toFixed(1) : t / 60) + " h"); }
+    rows.forEach((r, i) => { const yy = i * rh + 4, nm = r.country.replace("United States of America", "United States").replace("Central African Rep.", "C. African Rep."), sh = narrow && nm.length > 14 ? nm.slice(0, 13) + "." : nm;
+      el(s, "text", { x: lw - 6, y: yy + 13, "text-anchor": "end", class: "lab" }, sh);
+      const a = X(Math.min(0, r.e_ann)), b2 = X(Math.max(0, r.e_ann));
+      const rc = el(s, "rect", { x: a, y: yy + 2, width: Math.max(1, b2 - a), height: rh - 7, fill: COLS[cls(r.e_ann)], rx: 2, stroke: isDark() ? "none" : "rgba(0,0,0,.15)" });
+      el(s, "line", { x1: X(r.e_std), x2: X(r.e_std), y1: yy, y2: yy + rh - 3, stroke: css("--fg"), "stroke-width": 2 });
+      el(s, "text", { x: X(Math.max(0, r.e_ann)) + 5, y: yy + 13, class: "lab s m" }, (r.e_ann > 0 ? "+" : "") + Math.round(r.e_ann) + " min");
+      rc.addEventListener("mousemove", ev => showTip(`<b>${esc(r.country)}</b><br>year average ${dur(r.e_ann)}<br>no daylight saving ${dur(r.e_std)}<br>21 June ${dur(r.e_jun)}<br>21 December ${dur(r.e_dec)}`, ev.pageX - scrollX, ev.pageY - scrollY)); rc.addEventListener("mouseleave", hideTip); });
+    $("cCountries").appendChild(s);
+  });
+}
+const GALS = [["A Coruña", "#8E2A3B", 2.6], ["Santiago de Compostela", "#D9661F", 2.2], ["Vigo", "#E3A33B", 2.2], ["Madrid", "#5B564F", 1.2], ["Barcelona", "#8C8379", 1.2], ["London", "#2F5F8F", 1.4], ["Porto", "#2E8B7A", 1.2]];
+function galChart() {
+  resp($("cGal"), (W, narrow) => {
+    const H = narrow ? 300 : 360, L = 44, Rr = narrow ? 96 : 150, T = 10, B = 24, k = S.galK;
+    const all = GALS.flatMap(g => D.gal[g[0]][k]); const lo = Math.floor(Math.min(...all) / 60) * 60, hi = Math.ceil(Math.max(...all) / 60) * 60;
+    const x = d => L + (W - L - Rr) * (d - .5) / 365, y = v => T + (H - T - B) * (k === "rise" ? (v - lo) / (hi - lo) : 1 - (v - lo) / (hi - lo));
+    const s = svg(W, H);
+    for (let t = lo; t <= hi; t += 30) { el(s, "line", { x1: L, x2: W - Rr, y1: y(t), y2: y(t), stroke: t % 60 ? css("--panel") : css("--rule") }); if (t % 60 === 0) el(s, "text", { x: L - 5, y: y(t) + 4, "text-anchor": "end", class: "lab s m" }, hm(t)); }
+    let acc = 0; MDAYS.forEach((m, i) => { if (!narrow || i % 2 === 0) el(s, "text", { x: x(acc + m / 2), y: H - 6, "text-anchor": "middle", class: "lab s m" }, MONTHS[i].slice(0, 3)); acc += m; });
+    if (k === "rise") { el(s, "line", { x1: L, x2: W - Rr, y1: y(540), y2: y(540), stroke: "#8E2A3B", "stroke-dasharray": "4 3", opacity: .7 }); el(s, "text", { x: L + 4, y: y(540) - 4, class: "lab s", style: "fill:#8E2A3B" }, "9:00"); }
+    const labs = [];
+    for (const [nm, col, w] of GALS.slice().reverse()) { const a = D.gal[nm][k]; el(s, "path", { d: a.map((v, i) => (i ? "L" : "M") + x(i + 1).toFixed(1) + " " + y(v).toFixed(1)).join(""), fill: "none", stroke: col, "stroke-width": w, opacity: w < 2 ? .85 : 1 });
+      const ld = k === "rise" ? 3 : 178; labs.push({ y: y(a[ld - 1]), t: nm.replace("Santiago de Compostela", "Santiago"), c: col }); }
+    labs.sort((a, b) => a.y - b.y); for (let i = 1; i < labs.length; i++) if (labs[i].y - labs[i - 1].y < 13) labs[i].y = labs[i - 1].y + 13;
+    for (const l of labs) el(s, "text", { x: W - Rr + 6, y: l.y + 4, class: "lab b", style: `fill:${l.c}` }, l.t);
+    const hov = el(s, "rect", { x: L, y: T, width: W - L - Rr, height: H - T - B, fill: "transparent" });
+    hov.addEventListener("mousemove", ev => { const rc = s.getBoundingClientRect(), d = Math.max(1, Math.min(365, Math.round(((ev.clientX - rc.left) * W / rc.width - L) / (W - L - Rr) * 365 + .5))); showTip(`<b>${dateLabel(d)}</b><br>` + GALS.map(g => `<span style="color:${g[1]}">■</span> ${esc(g[0])}: ${hm(D.gal[g[0]][k][d - 1])}`).join("<br>"), ev.pageX - scrollX, ev.pageY - scrollY); });
+    hov.addEventListener("mouseleave", hideTip);
+    $("cGal").appendChild(s);
+  });
+}
+function tables() {
+  const row = r => `<tr><td>${esc(r.name)}, ${esc(r.cc)}</td><td class="num">${dur(r.e_ann).replace(" ahead", "").replace(" behind", "")}</td><td class="num">${r.rise_late}</td></tr>`;
+  const head = `<tr><th>City</th><th class="num">Gap</th><th class="num">Latest sunrise</th></tr>`;
+  $("tAhead").innerHTML = head + R.extremes.ahead_100k.map(row).join("");
+  $("tBehind").innerHTML = head + R.extremes.behind_100k.map(row).join("");
+}
+
+/* ===== search ===== */
+function suggest(inp, list, items, pick) {
+  let cur = -1, res = [];
+  const draw = () => { list.innerHTML = res.map((r, i) => `<li role="option" aria-selected="${i === cur}" data-i="${i}">${esc(r[0])}${r[2] ? ` <span>${esc(r[2])}</span>` : ""}</li>`).join(""); list.style.display = res.length ? "block" : "none"; list.querySelectorAll("li").forEach(li => li.onmousedown = e => { e.preventDefault(); go(+li.dataset.i); }); };
+  const go = i => { const r = res[i]; if (!r) return; inp.value = r[0]; list.style.display = "none"; inp.blur(); pick(r[1]); };
+  const norm = t => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  inp.addEventListener("input", () => { const q = norm(inp.value.trim()); cur = -1; if (!q) { res = []; draw(); return; } res = []; for (const p of items()) { const n = norm(p[0]); if (n.includes(q)) { res.push([p[0], p, p[1] + " · " + fmt(p[4]), n.startsWith(q) ? 0 : 1]); if (res.length > 400) break; } } res.sort((a, b) => a[3] - b[3]); res = res.slice(0, 12); draw(); });
+  inp.addEventListener("keydown", e => { if (e.key === "ArrowDown") { cur = Math.min(res.length - 1, cur + 1); draw(); e.preventDefault(); } else if (e.key === "ArrowUp") { cur = Math.max(0, cur - 1); draw(); e.preventDefault(); } else if (e.key === "Enter") { go(cur < 0 ? 0 : cur); } else if (e.key === "Escape") { list.style.display = "none"; } });
+  inp.addEventListener("blur", () => setTimeout(() => list.style.display = "none", 150));
+}
+function mapIntoView() { const m = $("lmap"), r = m.getBoundingClientRect(); if (r.top < 0 || r.bottom > innerHeight) m.scrollIntoView({ behavior: "smooth", block: innerWidth < 920 ? "start" : "center" }); }
+
+/* ===== boot ===== */
+function loadImg(src) { return new Promise((ok, bad) => { const im = new Image(); im.onload = () => ok(im); im.onerror = bad; im.src = src; }); }
+async function boot() {
+  legend();
+  const [pd, im] = await Promise.all([fetch("data/page.json").then(r => r.json()), loadImg("data/zgrid.png")]);
+  D = pd; Z = D.zones;
+  { const c = document.createElement("canvas"); c.width = im.width; c.height = im.height; const x = c.getContext("2d", { willReadFrequently: true }); x.drawImage(im, 0, 0); const px = x.getImageData(0, 0, c.width, c.height).data; SRCG = new Uint16Array(c.width * c.height); for (let i = 0, j = 0; j < SRCG.length; i += 4, j++) SRCG[j] = px[i] | (px[i + 1] << 8); }
+  histChart(); countryChart(); galChart(); tables();
+  const lp = D.places.find(p => p[0] === "London" && p[1] === "GB"); LONDON = yearSeries(lp[2], lp[3], zoneAt(lp[2], lp[3]));
+  document.querySelectorAll("#histSeg .btn").forEach(b => b.onclick = () => { S.histK = b.dataset.k; setPressed("histSeg", "k", S.histK); redraws.forEach(f => f()); });
+  document.querySelectorAll("#galSeg .btn").forEach(b => b.onclick = () => { S.galK = b.dataset.k; setPressed("galSeg", "k", S.galK); redraws.forEach(f => f()); });
+  document.querySelectorAll("#modeSeg .btn").forEach(b => b.onclick = () => { S.mode = b.dataset.m; update(); });
+  document.querySelectorAll("#quick .btn").forEach(b => b.onclick = () => { S.mode = "day"; S.doy = b.dataset.d === "today" ? todayDoy() : +b.dataset.d; update(); });
+  let rq = 0; $("doy").addEventListener("input", e => { S.doy = +e.target.value; S.mode = "day"; $("dateBig").textContent = dateLabel(S.doy); cancelAnimationFrame(rq); rq = requestAnimationFrame(update); });
+  suggest($("q"), $("sug"), () => D.places, p => { selectAt(p[2], p[3], p[0] + ", " + p[1], true); mapIntoView(); });
+  S.doy = 172;
+  const gal = D.places.find(p => p[0] === "A Coruña");
+  if (!window.L) { $("loading").textContent = "The map library did not load."; selectAt(gal[2], gal[3], "A Coruña, ES"); return; }
+  lmap = L.map("lmap", { minZoom: innerWidth < 600 ? 1 : 2, maxZoom: 9, zoomSnap: .5, worldCopyJump: false, maxBounds: WORLD.pad(.05), maxBoundsViscosity: .8, scrollWheelZoom: false });
+  lmap.attributionControl.setPrefix('<a href="https://leafletjs.com">Leaflet</a>');
+  lmap.fitBounds(innerWidth < 600 ? [[-40, -20], [65, 60]] : [[-50, -140], [72, 160]]);
+  for (const [k, p] of [["names", 640], ["tz", 450], ["borders", 440], ["hills", 430], ["col", 420], ["land", 250]]) lmap.createPane(k).style.zIndex = p;
+  for (const k of ["names", "hills", "borders", "tz", "col"]) lmap.getPane(k).style.pointerEvents = "none";
+  const esri = (svc, extra) => L.tileLayer(`https://server.arcgisonline.com/ArcGIS/rest/services/${svc}/MapServer/tile/{z}/{y}/{x}`, { maxZoom: 16, attribution: "Tiles © Esri" + (extra || "") });
+  tiles = { light: esri("Canvas/World_Light_Gray_Base"), dark: esri("Canvas/World_Dark_Gray_Base"), satellite: esri("World_Imagery", ", Maxar, Earthstar Geographics") };
+  const [bj, tzj] = await Promise.all([fetch("data/borders.json").then(r => r.json()), fetch("data/tzlines.json").then(r => r.json())]);
+  landL = L.geoJSON(bj, { pane: "land", interactive: false, style: () => ({ stroke: false, fillColor: css("--land"), fillOpacity: 1 }) });
+  borderL = L.geoJSON(bj, { pane: "borders", interactive: false, renderer: L.canvas({ pane: "borders", padding: .3 }), style: () => ({ color: css("--line"), weight: 1, opacity: .5, fill: false }) });
+  tzL = L.geoJSON(tzj, { pane: "tz", interactive: false, renderer: L.canvas({ pane: "tz", padding: .3 }), style: () => ({ color: css("--line"), weight: 1.2, opacity: .7, dashArray: "4 3" }) });
+  initColourCanvas();
+  colL = new CanvasOverlay(colCv, [[D.grid.s, -180], [D.grid.n, 180]], { pane: "col", interactive: false, attribution: "Zones: timezone-boundary-builder (ODbL)" }).addTo(lmap);
+  hillCv = document.createElement("canvas");
+  hillL = new CanvasOverlay(hillCv, WORLD, { pane: "hills", interactive: false, attribution: "Hills: AWS Terrain" });
+  nameL = L.layerGroup();
+  L.control.scale({ imperial: false, position: "bottomleft" }).addTo(lmap);
+  initLayers(); applyLayers(); update();
+  lmap.on("click", e => { lmap.scrollWheelZoom.enable(); let lon = ((e.latlng.lng + 180) % 360 + 360) % 360 - 180; selectAt(e.latlng.lat, lon, null, false); });
+  lmap.on("mousemove", e => { const lon = ((e.latlng.lng + 180) % 360 + 360) % 360 - 180, z = zoneAt(e.latlng.lat, lon); if (z < 0) { hideTip(); return; } const ev = e.originalEvent; showTip(`${esc(dur(wrap(zoneVal(z) - 4 * lon)))}<br><span style="opacity:.7">${esc(Z[z].id)}</span>`, ev.pageX - scrollX, ev.pageY - scrollY); });
+  lmap.on("mouseout", hideTip);
+  $("loading").style.display = "none";
+  selectAt(gal[2], gal[3], "A Coruña, ES", false);
+}
+boot().catch(e => { $("loading").textContent = "Could not load the data: " + e.message; console.error(e); });
+</script>
+</body>
+</html>
