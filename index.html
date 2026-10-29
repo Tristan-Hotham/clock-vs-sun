@@ -1,0 +1,634 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Clock Versus Sun</title>
+<meta name="description" content="How wrong is your clock? A world map of the gap between clock time and the sun, with sunrise, sunset and solar noon for any place through 2026. Spain, Galicia, western China, India, Argentina, Russia and the UK.">
+<meta property="og:title" content="How wrong is your clock?">
+<meta property="og:description" content="76% of the world's people live where the clock runs ahead of the sun. In Galicia the winter sun rises after nine.">
+<meta property="og:image" content="https://maps.tristanhotham.com/clock-vs-sun/header.png">
+<meta property="og:url" content="https://maps.tristanhotham.com/clock-vs-sun/">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800;9..144,900&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+/* Morning paper: warm cream, ink, sun-orange for "clock ahead of the sun", slate blue for "behind". */
+:root{
+  --bg:#FAF6EE; --panel:#F1EBDF; --fg:#1E1B18; --muted:#6A635A; --rule:#E2D9C9; --card:#FFFDF8; --border:#CFC4B2;
+  --accent:#D9661F; --accent2:#2F5F8F; --sea:#E7ECEE; --land:#F3EEE4; --line:#5B564F; --nodata:#ECE6DA;
+  --display:"Fraunces",Georgia,"Times New Roman",serif;
+  --body:"Source Serif 4",Georgia,"Times New Roman",serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#17161A; --panel:#211F24; --fg:#EEEAE3; --muted:#A8A29A; --rule:#34313A; --card:#1D1C21; --border:#4A4650;
+  --accent:#F08A45; --accent2:#7FA8D6; --sea:#1A1F26; --land:#28262C; --line:#D2CDC5; --nodata:#3A3740; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#17161A; --panel:#211F24; --fg:#EEEAE3; --muted:#A8A29A; --rule:#34313A; --card:#1D1C21; --border:#4A4650;
+  --accent:#F08A45; --accent2:#7FA8D6; --sea:#1A1F26; --land:#28262C; --line:#D2CDC5; --nodata:#3A3740; color-scheme:dark}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font:400 18px/1.62 var(--body);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));overflow-x:hidden}
+.wrap{max-width:700px;margin:0 auto;padding-block:28px 64px}
+.wrap .bleed{width:min(1180px,calc(100vw - 32px));margin-left:calc((100% - min(1180px,100vw - 32px))/2)}
+a{color:inherit;text-decoration-color:var(--accent);text-underline-offset:3px}
+.kicker{font:500 12px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.kicker b{background:var(--fg);color:var(--bg);padding:5px 8px;font-weight:500}
+header.hero{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px 24px;align-items:end;border-bottom:6px double var(--fg);padding-bottom:22px;margin-top:18px}
+h1{font:900 clamp(40px,9.5vw,82px)/.94 var(--display);letter-spacing:-.02em;margin:0;text-wrap:balance}
+h1 em{font-style:normal;background:linear-gradient(90deg,#2F5F8F,#E3A33B 45%,#D9661F 70%,#8E2A3B);-webkit-background-clip:text;background-clip:text;color:transparent}
+.mark{width:clamp(74px,15vw,124px);height:auto;display:block}
+.dek{grid-column:1/-1;font-size:21px;line-height:1.42;margin:8px 0 0;max-width:54ch}
+.byline{font:400 13px/1.4 var(--mono);color:var(--muted);margin-top:14px}
+h2{font:800 34px/1.06 var(--display);letter-spacing:-.01em;margin:56px 0 10px;text-wrap:balance}
+h2 .n{font:500 13px/1 var(--mono);color:var(--accent);display:block;letter-spacing:.1em;margin-bottom:10px}
+h3{font:600 21px/1.25 var(--display);margin:30px 0 6px}
+p{margin:0 0 16px}
+.lede::first-letter{font:900 70px/.8 var(--display);float:left;margin:6px 10px 0 0;color:var(--accent)}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule);margin:26px 0 8px}
+.stats div{background:var(--card);padding:14px 12px}
+.stats b{display:block;font:900 clamp(22px,4.4vw,32px)/1 var(--display);letter-spacing:-.01em}
+.stats span{font:400 12px/1.35 var(--mono);color:var(--muted);display:block;margin-top:6px}
+@media (max-width:600px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.figure{margin:26px 0 30px}
+.fig-h{font:600 19px/1.25 var(--display);margin:0 0 4px}
+.fig-sub{font:400 13px/1.45 var(--mono);color:var(--muted);margin:0 0 12px}
+.src{font:400 12px/1.5 var(--mono);color:var(--muted);margin-top:10px}
+.chart{width:100%;position:relative}
+.chart svg{display:block;width:100%;height:auto;overflow:visible}
+svg text{font-family:var(--mono);fill:var(--fg)}
+.lab{font-size:12px}.lab.m{fill:var(--muted)}.lab.b{font-weight:500}.lab.s{font-size:11px}
+.tip{position:absolute;pointer-events:none;background:var(--fg);color:var(--bg);font:400 12px/1.45 var(--mono);padding:8px 10px;border-radius:3px;max-width:300px;z-index:1000;transform:translate(-50%,calc(-100% - 12px));display:none}
+.controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 10px}
+.ctl-l{font:500 11px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-right:2px}
+.btn{font:500 12px/1 var(--mono);background:var(--card);color:var(--fg);border:1px solid var(--border);border-radius:3px;padding:8px 10px;cursor:pointer;min-height:36px;white-space:nowrap}
+.btn[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.btn:focus-visible,input:focus-visible,summary:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:3px;overflow:hidden;max-width:100%;flex-wrap:wrap}
+.seg .btn{border:0;border-radius:0;border-right:1px solid var(--border)}
+.seg .btn:last-child{border-right:0}
+select{font:500 12px/1 var(--mono);background:var(--card);color:var(--fg);border:1px solid var(--border);border-radius:3px;padding:8px 6px;min-height:36px;max-width:100%}
+.searchbox{position:relative;flex:1 1 240px;min-width:0}
+input[type=search]{font:400 15px/1 var(--mono);background:var(--card);color:var(--fg);border:1px solid var(--border);border-radius:3px;padding:10px 11px;min-height:40px;width:100%}
+.suggest{position:absolute;left:0;right:0;top:100%;margin:2px 0 0;padding:0;list-style:none;background:var(--card);border:1px solid var(--border);z-index:1001;font:400 13px/1.3 var(--mono);display:none;max-height:340px;overflow:auto}
+.suggest li{padding:8px 10px;cursor:pointer;border-bottom:1px solid var(--rule)}
+.suggest li span{color:var(--muted)}
+.suggest li[aria-selected="true"],.suggest li:hover{background:var(--panel)}
+/* map controls: one compact row that scrolls sideways on phones */
+.mapctl{display:flex;gap:8px;align-items:center;margin:0 0 8px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:thin;padding-bottom:2px}
+.mapctl .seg{flex-wrap:nowrap;flex:0 0 auto}
+.datebar{display:flex;gap:10px;align-items:center;margin:0 0 8px}
+.datebar input[type=range]{flex:1 1 auto;accent-color:var(--accent);min-width:0}
+.datebig{font:800 22px/1 var(--display);min-width:7.6ch;white-space:nowrap}
+.mapgrid{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:14px;align-items:start}
+@media (max-width:920px){.mapgrid{grid-template-columns:minmax(0,1fr)}}
+.side{background:var(--card);border:1px solid var(--border);padding:12px 12px 10px;font:400 13px/1.45 var(--mono);min-width:0}
+.side h4{font:500 11px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:14px 0 8px}
+.side h4:first-child{margin-top:2px}
+.mapbox{position:relative}
+#lmap{height:600px;border:1px solid var(--border);background:var(--sea);border-radius:2px}
+@media (max-width:600px){#lmap{height:56vh;min-height:330px;max-height:470px}}
+.leaflet-container{font:400 12px/1.4 var(--mono);background:var(--sea)}
+.leaflet-image-layer.px{image-rendering:pixelated}
+.loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:500 13px/1.4 var(--mono);color:var(--muted);background:color-mix(in srgb,var(--panel) 80%,transparent);z-index:900;pointer-events:none}
+.legend{display:flex;align-items:stretch;margin:8px 0 0;font:400 11px/1.2 var(--mono);color:var(--muted)}
+.legend div{flex:1 1 0;text-align:center}
+.legend i{display:block;height:12px;border-right:1px solid var(--card)}
+.legend span{display:block;margin-top:3px;white-space:nowrap}
+.legcap{display:flex;justify-content:space-between;font:500 11px/1.3 var(--mono);color:var(--muted);margin-top:4px}
+.lyrBtn{background:var(--card);color:var(--fg);border:1px solid var(--border);border-radius:3px;font:600 12px/1 var(--mono);padding:8px 10px;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.12)}
+.lyrBtn[aria-expanded="true"]{background:var(--fg);color:var(--bg)}
+.lyrPanel{background:var(--card);color:var(--fg);border:1px solid var(--border);border-radius:3px;padding:10px 12px 8px;margin-top:6px;width:240px;box-shadow:0 2px 10px rgba(0,0,0,.15);font:400 12px/1.3 var(--mono);max-height:60vh;overflow:auto}
+.lyrPanel[hidden]{display:none}
+.lyrPanel .row{margin:0 0 9px}
+.lyrPanel label{display:flex;gap:6px;align-items:center;cursor:pointer;font-weight:600}
+.lyrPanel input[type=range]{width:100%;accent-color:var(--fg)}
+.lyrPanel select{font:400 12px var(--mono);background:var(--bg);color:var(--fg);border:1px solid var(--border);border-radius:2px;padding:2px 4px;width:100%;min-height:26px}
+.lyrPanel .sub{display:flex;gap:6px;align-items:center;color:var(--muted);font-size:11px;margin-top:3px}
+.lyrPanel .sub span{flex:0 0 58px}
+.lyrPanel .reset{font:400 11px var(--mono);color:var(--muted);background:none;border:0;padding:0;cursor:pointer;text-decoration:underline}
+.town{font:500 11px/1 var(--mono);color:var(--fg);white-space:nowrap;text-shadow:0 0 3px var(--bg),0 0 3px var(--bg),0 0 2px var(--bg);pointer-events:none}
+.town i{display:inline-block;width:4px;height:4px;border-radius:50%;background:var(--fg);margin-right:4px;vertical-align:1px}
+.town.r3{font-weight:600;font-size:12px}
+.town.r0,.town.r1{font-weight:400;font-size:10.5px}
+.sat .town{color:#fff;text-shadow:0 0 3px #000,0 0 3px #000}
+.sat .town i{background:#fff}
+.leaflet-tooltip{font:400 12px/1.4 var(--mono);background:var(--fg);color:var(--bg);border:0;border-radius:3px;box-shadow:none}
+.leaflet-tooltip:before{display:none}
+.leaflet-bar a,.leaflet-bar a:hover{background:var(--card);color:var(--fg);border-bottom-color:var(--border)}
+.leaflet-control-attribution{background:color-mix(in srgb,var(--card) 85%,transparent)!important;color:var(--muted)}
+.leaflet-control-attribution a{color:var(--fg)}
+#card .big{font:800 24px/1.12 var(--display);margin:4px 0 2px;text-wrap:balance}
+#card .sub{color:var(--muted);font-size:12px;margin:0 0 8px}
+.gap{font:900 30px/1 var(--display);margin:6px 0 2px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;margin:8px 0}
+.kv dt{color:var(--muted)}.kv dd{margin:0;text-align:right}
+.pull{font:600 26px/1.25 var(--display);border-left:6px solid var(--accent);padding:4px 0 4px 18px;margin:30px 0}
+.note{background:var(--panel);border:1px solid var(--rule);padding:14px 16px;font-size:16px;margin:22px 0}
+.note h3{margin-top:0}
+table.t{width:100%;border-collapse:collapse;font:400 13px/1.35 var(--mono)}
+table.t th{text-align:left;font-weight:500;color:var(--muted);border-bottom:2px solid var(--fg);padding:6px 8px 6px 0}
+table.t td{border-bottom:1px solid var(--rule);padding:7px 8px 7px 0;vertical-align:top}
+table.t td.num,table.t th.num{text-align:right;white-space:nowrap}
+.tablewrap{overflow-x:auto}
+.xgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px}
+@media (max-width:760px){.xgrid{grid-template-columns:minmax(0,1fr)}}
+details{margin:14px 0}
+summary{font:500 13px/1.4 var(--mono);cursor:pointer;color:var(--fg);padding:8px 0}
+.cta{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0}
+.cta a{font:500 13px/1 var(--mono);text-decoration:none;border:1px solid var(--fg);padding:11px 14px;border-radius:3px}
+.cta a.p{background:var(--accent);border-color:var(--accent);color:#fff}
+footer{border-top:6px double var(--fg);margin-top:56px;padding-top:16px;font:400 13px/1.55 var(--mono);color:var(--muted)}
+footer p{margin:0 0 10px}
+.theme{position:fixed;right:12px;bottom:12px;z-index:1002}
+@media print{.theme,.controls,.mapctl,.datebar{display:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="kicker"><b>Data study</b><span>Time and the sun</span><span>The world, 2026</span></div>
+<header class="hero">
+  <h1>How wrong is your <em>clock?</em></h1>
+  <svg class="mark" viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="54" fill="none" stroke="currentColor" stroke-width="2.5"/><g stroke="currentColor" stroke-width="2"><path d="M60 10v9M60 101v9M10 60h9M101 60h9"/></g><path d="M60 60 L60 26" stroke="currentColor" stroke-width="4" stroke-linecap="round"/><path d="M60 60 L84 72" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><circle cx="88" cy="34" r="13" fill="#E3A33B"/><g stroke="#E3A33B" stroke-width="2.5" stroke-linecap="round"><path d="M88 13v-6M88 61v-6M67 34h-6M115 34h-6M73 19l-4-4M107 53l-4-4M103 19l4-4"/></g></svg>
+  <p class="dek">Noon on the clock is meant to be when the sun is highest. For most of the world it is not even close. I measured the gap between clock time and the sun for every inhabited place on Earth under the time zone rules of 2026. Tap anywhere to see when the sun rises, peaks and sets there through the year.</p>
+</header>
+<div class="byline">Dr Tristan Hotham, Independent researcher · 2026 · Data: timezone-boundary-builder (ODbL), IANA tz database 2026e, Kontur Population (CC BY 4.0), GeoNames (CC BY 4.0), Natural Earth</div>
+
+<div class="stats">
+  <div><b style="color:var(--accent)">76%</b><span>of the world's people live where the clock runs ahead of the sun, averaged over 2026</span></div>
+  <div><b style="color:var(--accent)">735m</b><span>people whose clock is more than an hour ahead of the sun on average</span></div>
+  <div><b style="color:#8E2A3B">1 h 44 min</b><span>Spain: the furthest ahead of any country of a million people or more</span></div>
+  <div><b style="color:var(--accent2)">9:06</b><span>the latest sunrise of the year in A Coruña, Galicia, against 8:06 in London</span></div>
+</div>
+
+<p class="lede">The sun is highest in the sky at a moment called solar noon. Before railways, towns set their clocks by it, so noon on the town clock was noon in the sky. Time zones replaced that with a handful of shared clocks, each one right for a single line of longitude and a little wrong everywhere else. Then politics and daylight saving pushed many clocks further from the sun, nearly always in the same direction: ahead. When the clock runs ahead of the sun, everything in the sky happens later by the clock. The sun rises later, stands highest later and sets later.</p>
+<p>How far ahead is easy to measure. The sun moves across the sky at 15 degrees of longitude an hour, so every place has its own solar time, four minutes later for each degree further east. Compare that with the clock on the wall and you have the gap. I did this for every 22 km hexagon of the world's population and every town of 1,000 people or more in GeoNames, day by day through 2026, using the official time zone boundaries and the rules in the IANA time zone database.</p>
+
+<h2 class="bleed"><span class="n">01 · The map</span>How far the clock runs ahead of the sun</h2>
+<div class="bleed">
+<div class="mapctl" role="toolbar" aria-label="Map view">
+  <div class="seg" id="modeSeg"><button class="btn" data-m="day" aria-pressed="true">On a date</button><button class="btn" data-m="ann">Year average</button><button class="btn" data-m="std">No daylight saving</button></div>
+  <div class="seg" id="quick"><button class="btn" data-d="today">Today</button><button class="btn" data-d="355">21 Dec</button><button class="btn" data-d="172">21 Jun</button></div>
+</div>
+<div class="datebar" id="datebar"><span class="datebig" id="dateBig">21 June</span><input type="range" id="doy" min="1" max="365" step="1" value="172" aria-label="Day of the year"></div>
+<div class="mapgrid">
+  <div>
+    <div class="mapbox"><div id="lmap" role="application" aria-label="World map of the gap between clock time and solar time"></div><div class="loading" id="loading">Loading the time zones…</div></div>
+    <div class="legend" id="legend"></div>
+    <div class="legcap"><span>clock behind the sun: sun early</span><span>clock ahead: sun late</span></div>
+  </div>
+  <aside class="side">
+    <div class="controls" style="margin-bottom:6px"><div class="searchbox"><input type="search" id="q" placeholder="Search a place, e.g. Vigo, Kashgar" autocomplete="off" aria-label="Search a place" aria-autocomplete="list" aria-controls="sug"><ul class="suggest" id="sug" role="listbox"></ul></div></div>
+    <div id="card"><p class="sub">Tap the map or search for a place.</p></div>
+  </aside>
+</div>
+<p class="src" id="mapNote">Colour shows clock time minus mean solar time. Orange: the clock is ahead, so the sun rises, peaks and sets late by the clock. Blue: the clock is behind. Grey: open sea or Antarctica. Time zones as used in 2026 (tz database 2026e); Xinjiang is shown on Beijing time, its legal time. Scroll or pinch to zoom after tapping the map.</p>
+</div>
+
+<p>Two things jump out. First, the map is mostly orange. Few places keep a clock behind the sun, and almost none by much: only 1.7% of the world's people live where the clock is more than half an hour behind it on average. Second, the deepest colours come from political choices, not geography. All of China keeps Beijing time; all of India keeps one time; Spain keeps the time of Berlin; Argentina keeps a clock an hour ahead of its natural zone.</p>
+
+<h2><span class="n">02 · Who lives ahead</span>Three people in four live ahead of the sun</h2>
+<div class="figure"><p class="fig-h">The world's people by how far their clock runs ahead of the sun</p><p class="fig-sub">Share of 8.03 billion people (Kontur Population, 22 km hexagons) in 15 minute bands</p>
+<div class="controls"><div class="seg" id="histSeg"><button class="btn" data-k="e_ann" aria-pressed="true">Year average</button><button class="btn" data-k="e_std">No daylight saving</button><button class="btn" data-k="e_jun">21 June</button><button class="btn" data-k="e_dec">21 December</button></div></div>
+<div class="chart" id="cHist"></div></div>
+<p>Averaged over 2026, 76% of the world's people live where the clock is ahead of the sun, 33% more than half an hour ahead and 9.2% more than an hour ahead. The typical person's clock runs 19 min fast. Strip out daylight saving and the picture barely changes, because most people live in countries that do not change their clocks: 71% still live ahead of the sun. Daylight saving matters most in June, when 13.6% of the world's people have a clock more than an hour ahead. Only 15% of the world's people changed their clocks at all in 2026.</p>
+<p>Of the 162 countries with a million people or more, 135 run ahead of the sun on average and 19 by more than an hour. The countries that run behind tend to sit at the eastern edge of a zone (Qatar, Mozambique, Costa Rica, Bahrain) and only by about twenty minutes.</p>
+<div class="figure"><p class="fig-h">Clock minus sun by country</p><p class="fig-sub">Population-weighted average for 2026; the fifteen furthest ahead, some large countries and the five furthest behind (countries of a million people or more). The thin mark shows the gap without daylight saving.</p><div class="chart" id="cCountries"></div></div>
+
+<h2 class="bleed"><span class="n">03 · Galicia</span>The late mornings of the Atlantic edge of Spain</h2>
+<div class="bleed">
+<div class="figure" style="max-width:1000px;margin-inline:auto"><p class="fig-h">Sunrise by the clock through 2026</p><p class="fig-sub">Galicia (solid) against London, Madrid, Barcelona and Porto (thin). The steps are the clock changes in March and October.</p>
+<div class="controls"><div class="seg" id="galSeg"><button class="btn" data-k="rise" aria-pressed="true">Sunrise</button><button class="btn" data-k="set">Sunset</button></div></div>
+<div class="chart" id="cGal"></div></div>
+</div>
+<p>Anyone who has spent a winter in Galicia knows the feeling: it is still dark at what feels like the middle of the morning. The numbers bear it out. In A Coruña the latest sunrise of the year comes on 3 January at 9:06. Santiago de Compostela's latest is 9:05 and Vigo's 9:04. London, 8.1 degrees further north with much shorter winter days, never sees the sun later than 8:06. Madrid's latest is 8:38 and Barcelona's 8:18.</p>
+<p>The reason is longitude. Spain keeps Central European Time, the clock of Berlin and Rome, and Galicia is the westernmost part of mainland Spain, near 8.5 degrees west. The sun there runs 1 h 34 min behind the clock in winter and 2 h 34 min behind it in summer. Over the year A Coruña's clock is 2 h 8 min ahead of the sun on average, and Vigo's 2 h 9 min: the two most of any city of 100,000 people or more in the European group below. In 2026 the sun rises after 9:00 on 35 days in A Coruña and after 8:30 on 115 days, almost a third of the year. In June solar noon falls at 14:35 and the sun sets at 22:18.</p>
+<div class="pull">Vigo and Porto see the sun rise at almost the same moment. By the clock, Vigo's sunrise comes an hour later.</div>
+<p>Portugal, next door, keeps the clock of London. Porto lies at almost exactly the same longitude as Vigo, so the two see the same sun, but Vigo's clock runs 61 minutes further ahead. Porto's latest sunrise is 8:00. Across the Miño at Tui, the clock jumps by an hour on the bridge.</p>
+<p>Among the 590 cities of 100,000 people or more south of 55 degrees north in western, central and northern Europe (the EU apart from Cyprus and Malta, plus the UK, Norway and Switzerland), only Brest, at the tip of Brittany, has a later winter sunrise than A Coruña (9:09). Vigo and Ourense come third and fourth. Every other city with a later sunrise is in the far north, in Finland, Norway, Sweden or Estonia, where the winter days are short. And Vigo has the latest solar noon of all 630 cities in that group: 14:37 on 21 June.</p>
+
+<h2><span class="n">04 · Around the world</span>Where the clock and the sun part company</h2>
+<h3>Western China: one clock for nearly four time zones' worth of country</h3>
+<p>China's towns span 59 degrees of longitude, nearly enough for four time zones, but the whole country keeps Beijing time. In Fuyuan, on the Amur in the far north-east, the clock runs 57 min behind the sun. In Kashgar, in the far west, it runs 2 h 56 min ahead, the most of any city of 100,000 or more in the world. Kashgar's latest sunrise is 10:17, solar noon in winter comes at 14:54, and in June the sun sets at 22:27. Many people in Xinjiang keep an unofficial local clock two hours behind Beijing, which the tz database records as "Asia/Urumqi". On that clock Kashgar would be 56 min ahead of the sun. The border with Afghanistan, in the Wakhan corridor, has the biggest clock jump between neighbours anywhere: 3 h 30 min.</p>
+<h3>India: one time for almost 30 degrees of longitude</h3>
+<p>India Standard Time is set five and a half hours ahead of Greenwich, which is right for a line through the middle of the country. Among cities of 100,000 or more, the clock in Porbandar on the Gujarat coast runs 52 min ahead of the sun, while in Tinsukia, in Assam, it runs 51 min behind: the most behind of any city of that size in the world. That is 1 h 43 min of difference. On 21 June the sun rises at 4:14 in Tinsukia and 6:10 in Porbandar.</p>
+<h3>Argentina: an hour ahead all year</h3>
+<p>Almost all of Argentina lies west of 52.5 degrees west, the natural western edge of UTC minus three, yet the country keeps UTC minus three all year. Buenos Aires runs 54 min ahead of the sun, Córdoba 1 h 17 min and Mendoza 1 h 35 min. In Ushuaia the midwinter sun does not rise until 9:59.</p>
+<h3>Russia: Moscow time reaches the Arctic Urals</h3>
+<p>Russia uses 11 different offsets. Moscow time stretches a long way east: in Vorkuta, near the northern end of the Urals at 64 degrees east, the clock runs 1 h 16 min behind the sun, and small places near it are the most behind of any town of 1,000 people or more on Earth. At the other end of the Russian range, Novosibirsk runs 1 h 28 min ahead.</p>
+<h3>The UK: almost forty minutes from east to west</h3>
+<p>Greenwich is near the eastern edge of Britain, so most of the UK is a little ahead of the sun even in winter. In Lowestoft, the most easterly town, the winter clock runs 7 min behind the sun; in Enniskillen in County Fermanagh it runs 31 min ahead. On 21 December the sun rises at 8:04 in London, 8:44 in Belfast and 9:12 in Stornoway, 68 minutes after London. With summer time, London's clock runs 1 h ahead in June and Belfast's 1 h 24 min.</p>
+
+<h2><span class="n">05 · Extremes</span>The most and least sun-wrong cities</h2>
+<div class="xgrid">
+<div><p class="fig-h">Clock furthest ahead</p><p class="fig-sub">Cities of 100,000 or more, year average</p><div class="tablewrap"><table class="t" id="tAhead"></table></div></div>
+<div><p class="fig-h">Clock furthest behind</p><p class="fig-sub">Cities of 100,000 or more, year average</p><div class="tablewrap"><table class="t" id="tBehind"></table></div></div>
+</div>
+<p>All ten of the cities furthest ahead are in Xinjiang. All ten furthest behind are in north-east India or north-east China, at the eastern ends of those same single national clocks. Of 6,286 cities of 100,000 or more, 77% run ahead of the sun over the year and 14% more than an hour ahead.</p>
+
+<div class="note">
+<h3>Method and caveats</h3>
+<p><b>The gap.</b> Mean solar time at longitude L degrees east is UTC plus 4L minutes. The gap is the clock's offset from UTC minus 4L, folded into plus or minus 12 hours (so Tonga, on UTC plus 13 near 175 degrees west, is 40 minutes ahead, not a day). "Year average" averages the offset in force at midday on each day of 2026; "no daylight saving" uses the smaller of the offsets in force on 15 December 2026 and 15 June 2027, which follows the rules as they stand at the end of 2026 (for example Morocco on plain UTC from 20 September 2026, and the Canadian provinces that moved to permanent daylight time in November). The equation of time, which moves real solar noon by up to about 16 minutes either way through the year, is left out of the gap but included in every sunrise, sunset and solar noon time.</p>
+<p><b>Sun times.</b> The NOAA solar calculator equations, with sunrise and sunset when the top of the sun's disc meets a flat horizon (sun centre 0.833 degrees below it, standard refraction). They agree with the astral Python package to within a minute. Hills, buildings and altitude are ignored.</p>
+<p><b>Zones and people.</b> Time zone boundaries: timezone-boundary-builder release 2026a (built from OpenStreetMap). Rules: IANA tz database 2026e. Population: Kontur Population (November 2023), 22 km hexagons, each placed in the zone containing its centre (71,246 hexagons with people). Towns: GeoNames places of 1,000 or more (148,692). GeoNames' own time zone gives the same clock on every day of 2026 for 99.9% of them. On the map, zones are stored on a 0.1 degree grid, so a tap within a few kilometres of a zone boundary can land in the neighbouring zone.</p>
+<p><b>Legal and lived time.</b> I use legal time throughout. Xinjiang is on Beijing time; the informal Xinjiang time used by many local people is given as an alternative. Elsewhere, shops, schools and offices may adapt their hours to the sun, which a clock map cannot show.</p>
+</div>
+
+<div class="cta"><a class="p" href="https://doi.org/10.5281/zenodo.23757706">Read the paper</a><a href="https://github.com/Tristan-Hotham/clock-vs-sun">Data and code</a><a href="https://blog.tristanhotham.com/2026/10/29/clock-vs-sun/">Blog post</a></div>
+
+<details><summary>Sources and licences</summary>
+<p class="src">Time zone boundaries: Evan Siroky, timezone-boundary-builder, release 2026a, https://github.com/evansiroky/timezone-boundary-builder, Open Database License (ODbL) 1.0, built from OpenStreetMap data © OpenStreetMap contributors. Time zone rules: IANA time zone database version 2026e (public domain), via the Python tzdata package. Population: Kontur Population dataset, 22 km H3 hexagons, release 1 November 2023, via the Humanitarian Data Exchange, CC BY 4.0. Towns: GeoNames cities1000, retrieved 2026-10-29, CC BY 4.0. Country outlines: Natural Earth 1:10m and 1:50m (public domain). Solar equations: NOAA Global Monitoring Laboratory solar calculator. Hill shading: AWS Terrain Tiles (Mapzen terrarium). Optional base maps: Tiles © Esri.</p>
+</details>
+
+<footer>
+  <p>Dr Tristan Hotham, Independent researcher. ORCID 0000-0003-4931-9349. Cite as: Hotham, T. (2026) How wrong is your clock? Clock time against solar time for the world's people in 2026. https://doi.org/10.5281/zenodo.23757706</p>
+  <p>I wrote the text, with drafting and editing assistance from Claude (Anthropic), which also helped prepare the analysis code. I reviewed and checked all text and results.</p>
+  <p>Text, figures and derived data: CC BY 4.0, except the time zone lines and grid, which are derived from timezone-boundary-builder and shared under the ODbL 1.0. Code: MIT. Other studies: <a href="https://maps.tristanhotham.com/sun-and-rain/">Sun and rain</a>, <a href="https://maps.tristanhotham.com/eclipse-towns/">Eclipse towns</a>, <a href="https://blog.tristanhotham.com/">all posts</a>.</p>
+</footer>
+</div>
+<div class="tip" id="tip"></div>
+<button class="btn theme" id="theme" aria-label="Toggle dark mode">◐</button>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+"use strict";
+const R = {"hist":{"bins":[-180,-165,-150,-135,-120,-105,-90,-75,-60,-45,-30,-15,0,15,30,45,60,75,90,105,120,135,150,165,180,195,210,225,240,255,270,285,300],"e_std":[0.0,0.0,0.0,0.0,0.0,0.0,1e-05,1e-05,0.00217,0.01574,0.07844,0.19317,0.22758,0.23122,0.14112,0.06136,0.03466,0.00884,0.00209,0.00046,0.00101,0.00067,0.0008,0.00065,1e-05,0.0,0.0,0.0,0.0,0.0,0.0,0.0],"e_ann":[0.0,0.0,0.0,0.0,0.0,0.0,1e-05,1e-05,0.00217,0.0148,0.06686,0.15549,0.20479,0.22736,0.15193,0.08503,0.05863,0.02088,0.00507,0.00332,0.0015,0.00067,0.00081,0.00065,1e-05,0.0,0.0,0.0,0.0,0.0,0.0,0.0],"e_jun":[0.0,0.0,0.0,0.0,0.0,0.0,1e-05,1e-05,0.00217,0.0148,0.06686,0.15621,0.19778,0.2008,0.1336,0.09217,0.06022,0.03849,0.02089,0.00661,0.00525,0.00237,0.00111,0.00065,1e-05,0.0,0.0,0.0,0.0,0.0,0.0,0.0],"e_dec":[0.0,0.0,0.0,0.0,0.0,0.0,1e-05,1e-05,0.00217,0.01574,0.07844,0.19226,0.22725,0.2297,0.13963,0.06125,0.03498,0.01035,0.00358,0.00148,0.00101,0.00067,0.0008,0.00065,1e-05,0.0,0.0,0.0,0.0,0.0,0.0,0.0]},"country_chart":[{"country":"Spain","e_ann":104.2,"e_std":69.7,"e_jun":129.7,"e_dec":69.7,"pop":46725766},{"country":"France","e_ann":81.3,"e_std":48.0,"e_jun":105.8,"e_dec":48.0,"pop":67428895},{"country":"Chile","e_ann":80.5,"e_std":46.4,"e_jun":46.4,"e_dec":105.5,"pop":19615546},{"country":"Belgium","e_ann":77.3,"e_std":42.7,"e_jun":102.7,"e_dec":42.7,"pop":12650699},{"country":"Netherlands","e_ann":73.3,"e_std":38.9,"e_jun":98.8,"e_dec":38.9,"pop":17520653},{"country":"Portugal","e_ann":70.0,"e_std":35.5,"e_jun":95.5,"e_dec":35.5,"pop":10528123},{"country":"Belarus","e_ann":68.8,"e_std":68.8,"e_jun":68.8,"e_dec":68.8,"pop":9551885},{"country":"Argentina","e_ann":65.8,"e_std":65.8,"e_jun":65.8,"e_dec":65.8,"pop":45883483},{"country":"Kyrgyzstan","e_ann":65.5,"e_std":65.5,"e_jun":65.5,"e_dec":65.5,"pop":6459301},{"country":"Singapore","e_ann":65.4,"e_std":65.4,"e_jun":65.4,"e_dec":65.4,"pop":2732012},{"country":"Morocco","e_ann":64.4,"e_std":27.1,"e_jun":87.1,"e_dec":27.1,"pop":36914206},{"country":"Gambia","e_ann":64.3,"e_std":64.3,"e_jun":64.3,"e_dec":64.3,"pop":3078184},{"country":"Senegal","e_ann":64.2,"e_std":64.2,"e_jun":64.2,"e_dec":64.2,"pop":17196033},{"country":"Ireland","e_ann":64.1,"e_std":29.6,"e_jun":89.6,"e_dec":29.6,"pop":4968184},{"country":"Switzerland","e_ann":61.9,"e_std":27.4,"e_jun":87.4,"e_dec":27.4,"pop":7916512},{"country":"United States of America","e_ann":49.8,"e_std":11.8,"e_jun":70.1,"e_dec":11.8,"pop":337956966},{"country":"United Kingdom","e_ann":41.1,"e_std":6.6,"e_jun":66.6,"e_dec":6.6,"pop":67827741},{"country":"Russia","e_ann":35.7,"e_std":35.6,"e_jun":35.7,"e_dec":35.6,"pop":145171614},{"country":"China","e_ann":24.7,"e_std":24.7,"e_jun":24.7,"e_dec":24.7,"pop":1412103330},{"country":"India","e_ann":9.4,"e_std":9.4,"e_jun":9.4,"e_dec":9.4,"pop":1439851960},{"country":"Brazil","e_ann":-1.2,"e_std":-1.2,"e_jun":-1.2,"e_dec":-1.2,"pop":216028415},{"country":"Indonesia","e_ann":-7.0,"e_std":-7.0,"e_jun":-7.0,"e_dec":-7.0,"pop":278714871},{"country":"Japan","e_ann":-8.6,"e_std":-8.6,"e_jun":-8.6,"e_dec":-8.6,"pop":123277857},{"country":"Malawi","e_ann":-17.8,"e_std":-17.8,"e_jun":-17.8,"e_dec":-17.8,"pop":20923724},{"country":"Bahrain","e_ann":-22.1,"e_std":-22.1,"e_jun":-22.1,"e_dec":-22.1,"pop":1453560},{"country":"Costa Rica","e_ann":-23.5,"e_std":-23.5,"e_jun":-23.5,"e_dec":-23.5,"pop":5357499},{"country":"Mozambique","e_ann":-24.0,"e_std":-24.0,"e_jun":-24.0,"e_dec":-24.0,"pop":33459158},{"country":"Qatar","e_ann":-25.9,"e_std":-25.9,"e_jun":-25.9,"e_dec":-25.9,"pop":2748550}],"extremes":{"ahead_any":[{"name":"Tashqorghan","cc":"CN","pop":8919,"lat":37.7776,"lon":75.2248,"tz":"Asia/Urumqi","std_offset":480,"e_std":179.1,"e_ann":179.1,"e_jun":179.1,"e_dec":179.1,"rise_late":"10:15","rise_late_date":"6 January","rise_early":"7:37","rise_early_date":"14 June","set_late":"22:25","set_late_date":"28 June","set_early":"19:40","rise_dec21":"10:11","set_dec21":"19:44","rise_jun21":"7:37","set_jun21":"22:24","noon_jun21":"15:01","noon_dec21":"14:57","noon_late":"15:13","noon_early":"14:43","days_rise_after_9":166,"days_rise_after_830":221,"days_set_after_22":88,"rise_late_min":614.9,"set_jun21_min":1344.4,"rise_dec21_min":610.6,"rise_jun21_min":457.4},{"name":"Kashgar","cc":"CN","pop":506640,"lat":39.4672,"lon":75.9868,"tz":"Asia/Urumqi","std_offset":480,"e_std":176.1,"e_ann":176.1,"e_jun":176.1,"e_dec":176.1,"rise_late":"10:17","rise_late_date":"5 January","rise_early":"7:28","rise_early_date":"14 June","set_late":"22:27","set_late_date":"28 June","set_early":"19:32","rise_dec21":"10:13","set_dec21":"19:35","rise_jun21":"7:29","set_jun21":"22:27","noon_jun21":"14:58","noon_dec21":"14:54","noon_late":"15:10","noon_early":"14:40","days_rise_after_9":162,"days_rise_after_830":212,"days_set_after_22":89,"rise_late_min":616.6,"set_jun21_min":1346.6,"rise_dec21_min":612.6,"rise_jun21_min":449.1},{"name":"Yengisar","cc":"CN","pop":31113,"lat":38.9258,"lon":76.1714,"tz":"Asia/Urumqi","std_offset":480,"e_std":175.3,"e_ann":175.3,"e_jun":175.3,"e_dec":175.3,"rise_late":"10:14","rise_late_date":"5 January","rise_early":"7:29","rise_early_date":"14 June","set_late":"22:25","set_late_date":"28 June","set_early":"19:33","rise_dec21":"10:10","set_dec21":"19:36","rise_jun21":"7:30","set_jun21":"22:24","noon_jun21":"14:57","noon_dec21":"14:53","noon_late":"15:10","noon_early":"14:39","days_rise_after_9":160,"days_rise_after_830":212,"days_set_after_22":85,"rise_late_min":614.3,"set_jun21_min":1344.1,"rise_dec21_min":610.2,"rise_jun21_min":450.0},{"name":"Artux","cc":"CN","pop":285000,"lat":39.7084,"lon":76.1797,"tz":"Asia/Urumqi","std_offset":480,"e_std":175.3,"e_ann":175.3,"e_jun":175.3,"e_dec":175.3,"rise_late":"10:17","rise_late_date":"5 January","rise_early":"7:27","rise_early_date":"14 June","set_late":"22:27","set_late_date":"28 June","set_early":"19:31","rise_dec21":"10:13","set_dec21":"19:34","rise_jun21":"7:28","set_jun21":"22:27","noon_jun21":"14:57","noon_dec21":"14:53","noon_late":"15:10","noon_early":"14:39","days_rise_after_9":161,"days_rise_after_830":211,"days_set_after_22":88,"rise_late_min":616.5,"set_jun21_min":1346.6,"rise_dec21_min":612.5,"rise_jun21_min":447.5},{"name":"Damusi","cc":"CN","pop":9678,"lat":37.7555,"lon":76.6123,"tz":"Asia/Urumqi","std_offset":480,"e_std":173.6,"e_ann":173.6,"e_jun":173.6,"e_dec":173.6,"rise_late":"10:09","rise_late_date":"6 January","rise_early":"7:31","rise_early_date":"14 June","set_late":"22:20","set_late_date":"28 June","set_early":"19:34","rise_dec21":"10:05","set_dec21":"19:38","rise_jun21":"7:32","set_jun21":"22:19","noon_jun21":"14:55","noon_dec21":"14:52","noon_late":"15:08","noon_early":"14:37","days_rise_after_9":156,"days_rise_after_830":211,"days_set_after_22":76,"rise_late_min":609.3,"set_jun21_min":1338.8,"rise_dec21_min":605.0,"rise_jun21_min":451.9},{"name":"Huoshilafu","cc":"CN","pop":17351,"lat":37.8664,"lon":76.6958,"tz":"Asia/Urumqi","std_offset":480,"e_std":173.2,"e_ann":173.2,"e_jun":173.2,"e_dec":173.2,"rise_late":"10:09","rise_late_date":"6 January","rise_early":"7:30","rise_early_date":"14 June","set_late":"22:20","set_late_date":"28 June","set_early":"19:34","rise_dec21":"10:05","set_dec21":"19:37","rise_jun21":"7:31","set_jun21":"22:19","noon_jun21":"14:55","noon_dec21":"14:51","noon_late":"15:07","noon_early":"14:37","days_rise_after_9":156,"days_rise_after_830":210,"days_set_after_22":76,"rise_late_min":609.2,"set_jun21_min":1338.8,"rise_dec21_min":605.0,"rise_jun21_min":451.2},{"name":"Kaqun","cc":"CN","pop":18749,"lat":37.9781,"lon":76.8672,"tz":"Asia/Urumqi","std_offset":480,"e_std":172.5,"e_ann":172.5,"e_jun":172.5,"e_dec":172.5,"rise_late":"10:09","rise_late_date":"6 January","rise_early":"7:29","rise_early_date":"14 June","set_late":"22:19","set_late_date":"28 June","set_early":"19:33","rise_dec21":"10:05","set_dec21":"19:36","rise_jun21":"7:30","set_jun21":"22:18","noon_jun21":"14:54","noon_dec21":"14:51","noon_late":"15:07","noon_early":"14:36","days_rise_after_9":154,"days_rise_after_830":208,"days_set_after_22":75,"rise_late_min":608.9,"set_jun21_min":1338.4,"rise_dec21_min":604.6,"rise_jun21_min":450.2},{"name":"Yak'airike","cc":"CN","pop":10204,"lat":38.196,"lon":76.9651,"tz":"Asia/Urumqi","std_offset":480,"e_std":172.1,"e_ann":172.1,"e_jun":172.1,"e_dec":172.1,"rise_late":"10:09","rise_late_date":"5 January","rise_early":"7:28","rise_early_date":"14 June","set_late":"22:19","set_late_date":"28 June","set_early":"19:32","rise_dec21":"10:05","set_dec21":"19:35","rise_jun21":"7:29","set_jun21":"22:19","noon_jun21":"14:54","noon_dec21":"14:50","noon_late":"15:06","noon_early":"14:36","days_rise_after_9":154,"days_rise_after_830":208,"days_set_after_22":76,"rise_late_min":609.1,"set_jun21_min":1338.7,"rise_dec21_min":604.9,"rise_jun21_min":449.1},{"name":"Qarek","cc":"CN","pop":29946,"lat":38.3722,"lon":76.9903,"tz":"Asia/Urumqi","std_offset":480,"e_std":172.0,"e_ann":172.0,"e_jun":172.0,"e_dec":172.0,"rise_late":"10:09","rise_late_date":"5 January","rise_early":"7:28","rise_early_date":"14 June","set_late":"22:20","set_late_date":"28 June","set_early":"19:31","rise_dec21":"10:05","set_dec21":"19:35","rise_jun21":"7:28","set_jun21":"22:19","noon_jun21":"14:54","noon_dec21":"14:50","noon_late":"15:06","noon_early":"14:36","days_rise_after_9":154,"days_rise_after_830":206,"days_set_after_22":76,"rise_late_min":609.5,"set_jun21_min":1339.1,"rise_dec21_min":605.3,"rise_jun21_min":448.5},{"name":"Zirefuxiati","cc":"CN","pop":10504,"lat":38.2158,"lon":77.0342,"tz":"Asia/Urumqi","std_offset":480,"e_std":171.9,"e_ann":171.9,"e_jun":171.9,"e_dec":171.9,"rise_late":"10:09","rise_late_date":"5 January","rise_early":"7:28","rise_early_date":"14 June","set_late":"22:19","set_late_date":"28 June","set_early":"19:31","rise_dec21":"10:05","set_dec21":"19:35","rise_jun21":"7:29","set_jun21":"22:18","noon_jun21":"14:54","noon_dec21":"14:50","noon_late":"15:06","noon_early":"14:35","days_rise_after_9":154,"days_rise_after_830":206,"days_set_after_22":74,"rise_late_min":608.9,"set_jun21_min":1338.5,"rise_dec21_min":604.7,"rise_jun21_min":448.8}],"behind_any":[{"name":"Sovetskiy","cc":"RU","pop":2415,"lat":67.4833,"lon":64.4167,"tz":"Europe/Moscow","std_offset":180,"e_std":-77.7,"e_ann":-77.7,"e_jun":-77.7,"e_dec":-77.7,"rise_late":"10:31","rise_late_date":"27 December","rise_early":"23:05","rise_early_date":"29 May","set_late":"22:25","set_late_date":"14 July","set_early":"10:51","rise_dec21":null,"set_dec21":null,"rise_jun21":null,"set_jun21":null,"noon_jun21":"10:44","noon_dec21":"10:40","noon_late":"10:57","noon_early":"10:26","days_rise_after_9":36,"days_rise_after_830":50,"days_set_after_22":5,"rise_late_min":631.2,"set_jun21_min":NaN,"rise_dec21_min":NaN,"rise_jun21_min":NaN},{"name":"Tsementnozavodskiy","cc":"RU","pop":2135,"lat":67.6283,"lon":64.0897,"tz":"Europe/Moscow","std_offset":180,"e_std":-76.4,"e_ann":-76.4,"e_jun":-76.4,"e_dec":-76.4,"rise_late":"10:31","rise_late_date":"30 December","rise_early":"23:07","rise_early_date":"28 May","set_late":"22:25","set_late_date":"15 July","set_early":"10:54","rise_dec21":null,"set_dec21":null,"rise_jun21":null,"set_jun21":null,"noon_jun21":"10:45","noon_dec21":"10:42","noon_late":"10:58","noon_early":"10:27","days_rise_after_9":32,"days_rise_after_830":46,"days_set_after_22":5,"rise_late_min":630.5,"set_jun21_min":NaN,"rise_dec21_min":NaN,"rise_jun21_min":NaN},{"name":"Vorkuta","cc":"RU","pop":80039,"lat":67.5087,"lon":64.0667,"tz":"Europe/Moscow","std_offset":180,"e_std":-76.3,"e_ann":-76.3,"e_jun":-76.3,"e_dec":-76.3,"rise_late":"10:41","rise_late_date":"27 December","rise_early":"23:03","rise_early_date":"29 May","set_late":"22:30","set_late_date":"14 July","set_early":"10:45","rise_dec21":null,"set_dec21":null,"rise_jun21":null,"set_jun21":null,"noon_jun21":"10:46","noon_dec21":"10:42","noon_late":"10:58","noon_early":"10:27","days_rise_after_9":37,"days_rise_after_830":50,"days_set_after_22":5,"rise_late_min":640.7,"set_jun21_min":NaN,"rise_dec21_min":NaN,"rise_jun21_min":NaN},{"name":"Promyshlennyy","cc":"RU","pop":1112,"lat":67.5833,"lon":63.9167,"tz":"Europe/Moscow","std_offset":180,"e_std":-75.7,"e_ann":-75.7,"e_jun":-75.7,"e_dec":-75.7,"rise_late":"10:34","rise_late_date":"29 December","rise_early":"22:53","rise_early_date":"29 May","set_late":"22:45","set_late_date":"14 July","set_early":"10:52","rise_dec21":null,"set_dec21":null,"rise_jun21":null,"set_jun21":null,"noon_jun21":"10:46","noon_dec21":"10:42","noon_late":"10:59","noon_early":"10:28","days_rise_after_9":34,"days_rise_after_830":48,"days_set_after_22":6,"rise_late_min":633.9,"set_jun21_min":NaN,"rise_dec21_min":NaN,"rise_jun21_min":NaN},{"name":"Vorgashor","cc":"RU","pop":18946,"lat":67.5836,"lon":63.794,"tz":"Europe/Moscow","std_offset":180,"e_std":-75.2,"e_ann":-75.2,"e_jun":-75.2,"e_dec":-75.2,"rise_late":"10:34","rise_late_date":"29 December","rise_early":"22:53","rise_early_date":"29 May","set_late":"22:46","set_late_date":"14 July","set_early":"10:53","rise_dec21":null,"set_dec21":null,"rise_jun21":null,"set_jun21":null,"noon_jun21":"10:47","noon_dec21":"10:43","noon_late":"10:59","noon_early":"10:28","days_rise_after_9":34,"days_rise_after_830":48,"days_set_after_22":6,"rise_late_min":634.5,"set_jun21_min":NaN,"rise_dec21_min":NaN,"rise_jun21_min":NaN},{"name":"Zapolyarnyy","cc":"RU","pop":4476,"lat":67.4955,"lon":63.7328,"tz":"Europe/Moscow","std_offset":180,"e_std":-74.9,"e_ann":-74.9,"e_jun":-74.9,"e_dec":-74.9,"rise_late":"10:37","rise_late_date":"27 December","rise_early":"23:06","rise_early_date":"29 May","set_late":"22:29","set_late_date":"14 July","set_early":"10:51","rise_dec21":null,"set_dec21":null,"rise_jun21":null,"set_jun21":null,"noon_jun21":"10:47","noon_dec21":"10:43","noon_late":"10:59","noon_early":"10:29","days_rise_after_9":37,"days_rise_after_830":51,"days_set_after_22":5,"rise_late_min":636.9,"set_jun21_min":NaN,"rise_dec21_min":NaN,"rise_jun21_min":NaN},{"name":"Verkhnyaya Inta","cc":"RU","pop":1975,"lat":65.9811,"lon":60.3094,"tz":"Europe/Moscow","std_offset":180,"e_std":-61.2,"e_ann":-61.2,"e_jun":-61.2,"e_dec":-61.2,"rise_late":"9:34","rise_late_date":"24 December","rise_early":"23:15","rise_early_date":"12 June","set_late":"22:46","set_late_date":"30 June","set_early":"12:20","rise_dec21":"9:33","set_dec21":"12:21","rise_jun21":null,"set_jun21":null,"noon_jun21":"11:01","noon_dec21":"10:57","noon_late":"11:13","noon_early":"10:42","days_rise_after_9":38,"days_rise_after_830":56,"days_set_after_22":16,"rise_late_min":573.8,"set_jun21_min":NaN,"rise_dec21_min":572.9,"rise_jun21_min":NaN},{"name":"Inta","cc":"RU","pop":32080,"lat":66.0317,"lon":60.1659,"tz":"Europe/Moscow","std_offset":180,"e_std":-60.7,"e_ann":-60.7,"e_jun":-60.7,"e_dec":-60.7,"rise_late":"9:36","rise_late_date":"24 December","rise_early":"23:05","rise_early_date":"12 June","set_late":"22:58","set_late_date":"30 June","set_early":"12:19","rise_dec21":"9:35","set_dec21":"12:20","rise_jun21":null,"set_jun21":null,"noon_jun21":"11:01","noon_dec21":"10:57","noon_late":"11:14","noon_early":"10:43","days_rise_after_9":38,"days_rise_after_830":57,"days_set_after_22":17,"rise_late_min":575.8,"set_jun21_min":NaN,"rise_dec21_min":574.9,"rise_jun21_min":NaN},{"name":"Fuyuan","cc":"CN","pop":30000,"lat":48.3635,"lon":134.2984,"tz":"Asia/Shanghai","std_offset":480,"e_std":-57.2,"e_ann":-57.2,"e_jun":-57.2,"e_dec":-57.2,"rise_late":"6:54","rise_late_date":"1 January","rise_early":"3:01","rise_early_date":"17 June","set_late":"19:08","set_late_date":"26 June","set_early":"15:08","rise_dec21":"6:51","set_dec21":"15:10","rise_jun21":"3:01","set_jun21":"19:08","noon_jun21":"11:05","noon_dec21":"11:01","noon_late":"11:17","noon_early":"10:46","days_rise_after_9":0,"days_rise_after_830":0,"days_set_after_22":0,"rise_late_min":414.2,"set_jun21_min":1147.7,"rise_dec21_min":411.1,"rise_jun21_min":181.4},{"name":"Hayuliang","cc":"IN","pop":1834,"lat":28.073,"lon":96.543,"tz":"Asia/Kolkata","std_offset":330,"e_std":-56.2,"e_ann":-56.2,"e_jun":-56.2,"e_dec":-56.2,"rise_late":"5:57","rise_late_date":"11 January","rise_early":"4:07","rise_early_date":"10 June","set_late":"18:05","set_late_date":"1 July","set_early":"16:08","rise_dec21":"5:51","set_dec21":"16:13","rise_jun21":"4:08","set_jun21":"18:03","noon_jun21":"11:06","noon_dec21":"11:02","noon_late":"11:18","noon_early":"10:47","days_rise_after_9":0,"days_rise_after_830":0,"days_set_after_22":0,"rise_late_min":356.7,"set_jun21_min":1083.4,"rise_dec21_min":350.9,"rise_jun21_min":247.8}],"ahead_100k":[{"name":"Kashgar","cc":"CN","pop":506640,"lat":39.4672,"lon":75.9868,"tz":"Asia/Urumqi","std_offset":480,"e_std":176.1,"e_ann":176.1,"e_jun":176.1,"e_dec":176.1,"rise_late":"10:17","rise_late_date":"5 January","rise_early":"7:28","rise_early_date":"14 June","set_late":"22:27","set_late_date":"28 June","set_early":"19:32","rise_dec21":"10:13","set_dec21":"19:35","rise_jun21":"7:29","set_jun21":"22:27","noon_jun21":"14:58","noon_dec21":"14:54","noon_late":"15:10","noon_early":"14:40","days_rise_after_9":162,"days_rise_after_830":212,"days_set_after_22":89,"rise_late_min":616.6,"set_jun21_min":1346.6,"rise_dec21_min":612.6,"rise_jun21_min":449.1},{"name":"Artux","cc":"CN","pop":285000,"lat":39.7084,"lon":76.1797,"tz":"Asia/Urumqi","std_offset":480,"e_std":175.3,"e_ann":175.3,"e_jun":175.3,"e_dec":175.3,"rise_late":"10:17","rise_late_date":"5 January","rise_early":"7:27","rise_early_date":"14 June","set_late":"22:27","set_late_date":"28 June","set_early":"19:31","rise_dec21":"10:13","set_dec21":"19:34","rise_jun21":"7:28","set_jun21":"22:27","noon_jun21":"14:57","noon_dec21":"14:53","noon_late":"15:10","noon_early":"14:39","days_rise_after_9":161,"days_rise_after_830":211,"days_set_after_22":88,"rise_late_min":616.5,"set_jun21_min":1346.6,"rise_dec21_min":612.5,"rise_jun21_min":447.5},{"name":"Shache","cc":"CN","pop":128145,"lat":38.4167,"lon":77.2406,"tz":"Asia/Urumqi","std_offset":480,"e_std":171.0,"e_ann":171.0,"e_jun":171.0,"e_dec":171.0,"rise_late":"10:09","rise_late_date":"5 January","rise_early":"7:27","rise_early_date":"14 June","set_late":"22:19","set_late_date":"28 June","set_early":"19:30","rise_dec21":"10:04","set_dec21":"19:34","rise_jun21":"7:27","set_jun21":"22:18","noon_jun21":"14:53","noon_dec21":"14:49","noon_late":"15:05","noon_early":"14:35","days_rise_after_9":152,"days_rise_after_830":205,"days_set_after_22":74,"rise_late_min":608.6,"set_jun21_min":1338.3,"rise_dec21_min":604.4,"rise_jun21_min":447.4},{"name":"Tumxuk","cc":"CN","pop":135727,"lat":39.8698,"lon":79.0612,"tz":"Asia/Urumqi","std_offset":480,"e_std":163.8,"e_ann":163.8,"e_jun":163.8,"e_dec":163.8,"rise_late":"10:05","rise_late_date":"5 January","rise_early":"7:15","rise_early_date":"14 June","set_late":"22:16","set_late_date":"28 June","set_early":"19:19","rise_dec21":"10:01","set_dec21":"19:22","rise_jun21":"7:15","set_jun21":"22:16","noon_jun21":"14:46","noon_dec21":"14:42","noon_late":"14:58","noon_early":"14:27","days_rise_after_9":143,"days_rise_after_830":191,"days_set_after_22":66,"rise_late_min":605.5,"set_jun21_min":1335.6,"rise_dec21_min":601.5,"rise_jun21_min":435.5},{"name":"Gujangbagh","cc":"CN","pop":408894,"lat":37.1093,"lon":79.9343,"tz":"Asia/Urumqi","std_offset":480,"e_std":160.3,"e_ann":160.3,"e_jun":160.3,"e_dec":160.3,"rise_late":"9:54","rise_late_date":"6 January","rise_early":"7:20","rise_early_date":"13 June","set_late":"22:04","set_late_date":"28 June","set_early":"19:23","rise_dec21":"9:50","set_dec21":"19:27","rise_jun21":"7:21","set_jun21":"22:04","noon_jun21":"14:42","noon_dec21":"14:38","noon_late":"14:54","noon_early":"14:24","days_rise_after_9":133,"days_rise_after_830":186,"days_set_after_22":35,"rise_late_min":594.3,"set_jun21_min":1323.5,"rise_dec21_min":589.9,"rise_jun21_min":440.5},{"name":"Aqsu","cc":"CN","pop":535657,"lat":41.1842,"lon":80.2792,"tz":"Asia/Urumqi","std_offset":480,"e_std":158.9,"e_ann":158.9,"e_jun":158.9,"e_dec":158.9,"rise_late":"10:05","rise_late_date":"4 January","rise_early":"7:06","rise_early_date":"15 June","set_late":"22:16","set_late_date":"27 June","set_early":"19:10","rise_dec21":"10:01","set_dec21":"19:13","rise_jun21":"7:06","set_jun21":"22:15","noon_jun21":"14:41","noon_dec21":"14:37","noon_late":"14:53","noon_early":"14:22","days_rise_after_9":137,"days_rise_after_830":183,"days_set_after_22":64,"rise_late_min":604.5,"set_jun21_min":1335.1,"rise_dec21_min":600.7,"rise_jun21_min":426.2},{"name":"Huocheng","cc":"CN","pop":360000,"lat":44.053,"lon":80.8717,"tz":"Asia/Urumqi","std_offset":480,"e_std":156.5,"e_ann":156.5,"e_jun":156.5,"e_dec":156.5,"rise_late":"10:11","rise_late_date":"3 January","rise_early":"6:53","rise_early_date":"15 June","set_late":"22:24","set_late_date":"27 June","set_early":"18:58","rise_dec21":"10:08","set_dec21":"19:01","rise_jun21":"6:53","set_jun21":"22:23","noon_jun21":"14:38","noon_dec21":"14:34","noon_late":"14:51","noon_early":"14:20","days_rise_after_9":138,"days_rise_after_830":179,"days_set_after_22":75,"rise_late_min":611.5,"set_jun21_min":1343.2,"rise_dec21_min":608.0,"rise_jun21_min":413.4},{"name":"Ālā'ĕr","cc":"CN","pop":126259,"lat":40.5418,"lon":81.2657,"tz":"Asia/Urumqi","std_offset":480,"e_std":154.9,"e_ann":154.9,"e_jun":154.9,"e_dec":154.9,"rise_late":"9:59","rise_late_date":"4 January","rise_early":"7:04","rise_early_date":"14 June","set_late":"22:10","set_late_date":"27 June","set_early":"19:08","rise_dec21":"9:55","set_dec21":"19:11","rise_jun21":"7:04","set_jun21":"22:09","noon_jun21":"14:37","noon_dec21":"14:33","noon_late":"14:49","noon_early":"14:18","days_rise_after_9":129,"days_rise_after_830":177,"days_set_after_22":49,"rise_late_min":598.6,"set_jun21_min":1329.0,"rise_dec21_min":594.7,"rise_jun21_min":424.4},{"name":"Ghulja","cc":"CN","pop":269158,"lat":43.9151,"lon":81.3215,"tz":"Asia/Urumqi","std_offset":480,"e_std":154.7,"e_ann":154.7,"e_jun":154.7,"e_dec":154.7,"rise_late":"10:09","rise_late_date":"3 January","rise_early":"6:52","rise_early_date":"15 June","set_late":"22:21","set_late_date":"27 June","set_early":"18:57","rise_dec21":"10:06","set_dec21":"19:00","rise_jun21":"6:52","set_jun21":"22:21","noon_jun21":"14:36","noon_dec21":"14:33","noon_late":"14:49","noon_early":"14:18","days_rise_after_9":136,"days_rise_after_830":176,"days_set_after_22":70,"rise_late_min":609.2,"set_jun21_min":1340.8,"rise_dec21_min":605.7,"rise_jun21_min":412.2},{"name":"Bole","cc":"CN","pop":235585,"lat":44.8933,"lon":82.0699,"tz":"Asia/Urumqi","std_offset":480,"e_std":151.7,"e_ann":151.7,"e_jun":151.7,"e_dec":151.7,"rise_late":"10:10","rise_late_date":"2 January","rise_early":"6:45","rise_early_date":"16 June","set_late":"22:22","set_late_date":"26 June","set_early":"18:50","rise_dec21":"10:06","set_dec21":"18:53","rise_jun21":"6:45","set_jun21":"22:22","noon_jun21":"14:33","noon_dec21":"14:30","noon_late":"14:46","noon_early":"14:15","days_rise_after_9":132,"days_rise_after_830":172,"days_set_after_22":71,"rise_late_min":609.6,"set_jun21_min":1341.6,"rise_dec21_min":606.3,"rise_jun21_min":405.4}],"behind_100k":[{"name":"Tinsukia","cc":"IN","pop":116322,"lat":27.489,"lon":95.3599,"tz":"Asia/Kolkata","std_offset":330,"e_std":-51.4,"e_ann":-51.4,"e_jun":-51.4,"e_dec":-51.4,"rise_late":"6:00","rise_late_date":"12 January","rise_early":"4:13","rise_early_date":"10 June","set_late":"18:08","set_late_date":"2 July","set_early":"16:14","rise_dec21":"5:54","set_dec21":"16:19","rise_jun21":"4:14","set_jun21":"18:07","noon_jun21":"11:10","noon_dec21":"11:07","noon_late":"11:23","noon_early":"10:52","days_rise_after_9":0,"days_rise_after_830":0,"days_set_after_22":0,"rise_late_min":360.3,"set_jun21_min":1086.7,"rise_dec21_min":354.3,"rise_jun21_min":253.9},{"name":"Dibrugarh","cc":"IN","pop":145488,"lat":27.4799,"lon":94.9084,"tz":"Asia/Kolkata","std_offset":330,"e_std":-49.6,"e_ann":-49.6,"e_jun":-49.6,"e_dec":-49.6,"rise_late":"6:02","rise_late_date":"12 January","rise_early":"4:15","rise_early_date":"10 June","set_late":"18:10","set_late_date":"2 July","set_early":"16:15","rise_dec21":"5:56","set_dec21":"16:20","rise_jun21":"4:16","set_jun21":"18:09","noon_jun21":"11:12","noon_dec21":"11:08","noon_late":"11:25","noon_early":"10:54","days_rise_after_9":0,"days_rise_after_830":0,"days_set_after_22":0,"rise_late_min":362.1,"set_jun21_min":1088.5,"rise_dec21_min":356.1,"rise_jun21_min":255.7},{"name":"Jorhat","cc":"IN","pop":126736,"lat":26.7575,"lon":94.2031,"tz":"Asia/Kolkata","std_offset":330,"e_std":-46.8,"e_ann":-46.8,"e_jun":-46.8,"e_dec":-46.8,"rise_late":"6:03","rise_late_date":"12 January","rise_early":"4:19","rise_early_date":"10 June","set_late":"18:11","set_late_date":"2 July","set_early":"16:20","rise_dec21":"5:57","set_dec21":"16:25","rise_jun21":"4:20","set_jun21":"18:10","noon_jun21":"11:15","noon_dec21":"11:11","noon_late":"11:27","noon_early":"10:57","days_rise_after_9":0,"days_rise_after_830":0,"days_set_after_22":0,"rise_late_min":363.5,"set_jun21_min":1089.7,"rise_dec21_min":357.4,"rise_jun21_min":260.2},{"name":"Imphal","cc":"IN","pop":277196,"lat":24.8081,"lon":93.9442,"tz":"Asia/Kolkata","std_offset":330,"e_std":-45.8,"e_ann":-45.8,"e_jun":-45.8,"e_dec":-45.8,"rise_late":"6:01","rise_late_date":"14 January","rise_early":"4:24","rise_early_date":"9 June","set_late":"18:08","set_late_date":"3 July","set_early":"16:25","rise_dec21":"5:54","set_dec21":"16:30","rise_jun21":"4:26","set_jun21":"18:06","noon_jun21":"11:16","noon_dec21":"11:12","noon_late":"11:28","noon_early":"10:58","days_rise_after_9":0,"days_rise_after_830":0,"days_set_after_22":0,"rise_late_min":360.7,"set_jun21_min":1086.4,"rise_dec21_min":354.2,"rise_jun21_min":265.6},{"name":"Baoshan","cc":"CN","pop":123791,"lat":46.5747,"lon":131.3932,"tz":"Asia/Shanghai","std_offset":480,"e_std":-45.6,"e_ann":-45.6,"e_jun":-45.6,"e_dec":-45.6,"rise_late":"6:59","rise_late_date":"2 January","rise_early":"3:21","rise_early_date":"16 June","set_late":"19:12","set_late_date":"26 June","set_early":"15:27","rise_dec21":"6:55","set_dec21":"15:29","rise_jun21":"3:21","set_jun21":"19:11","noon_jun21":"11:16","noon_dec21":"11:12","noon_late":"11:29","noon_early":"10:58","days_rise_after_9":0,"days_rise_after_830":0,"days_set_after_22":0,"rise_late_min":418.6,"set_jun21_min":1151.3,"rise_dec21_min":415.4,"rise_jun21_min":201.1},{"name":"Dimāpur","cc":"IN","pop":135860,"lat":25.9117,"lon":93.7217,"tz":"Asia/Kolkata","std_offset":330,"e_std":-44.9,"e_ann":-44.9,"e_jun":-44.9,"e_dec":-44.9,"rise_late":"6:04","rise_late_date":"13 January","rise_early":"4:23","rise_early_date":"9 June","set_late":"18:11","set_late_date":"2 July","set_early":"16:23","rise_dec21":"5:57","set_dec21":"16:29","rise_jun21":"4:24","set_jun21":"18:10","noon_jun21":"11:17","noon_dec21":"11:13","noon_late":"11:29","noon_early":"10:59","days_rise_after_9":0,"days_rise_after_830":0,"days_set_after_22":0,"rise_late_min":363.7,"set_jun21_min":1089.7,"rise_dec21_min":357.5,"rise_jun21_min":264.0},{"name":"Suifenhe","cc":"CN","pop":100000,"lat":44.3998,"lon":131.1478,"tz":"Asia/Shanghai","std_offset":480,"e_std":-44.6,"e_ann":-44.6,"e_jun":-44.6,"e_dec":-44.6,"rise_late":"6:52","rise_late_date":"3 January","rise_early":"3:30","rise_early_date":"16 June","set_late":"19:04","set_late_date":"27 June","set_early":"15:36","rise_dec21":"6:48","set_dec21":"15:38","rise_jun21":"3:31","set_jun21":"19:03","noon_jun21":"11:17","noon_dec21":"11:13","noon_late":"11:30","noon_early":"10:59","days_rise_after_9":0,"days_rise_after_830":0,"days_set_after_22":0,"rise_late_min":411.6,"set_jun21_min":1143.4,"rise_dec21_min":408.1,"rise_jun21_min":211.0},{"name":"Shuangyashan","cc":"CN","pop":600000,"lat":46.6769,"lon":131.1327,"tz":"Asia/Shanghai","std_offset":480,"e_std":-44.5,"e_ann":-44.5,"e_jun":-44.5,"e_dec":-44.5,"rise_late":"7:00","rise_late_date":"2 January","rise_early":"3:21","rise_early_date":"16 June","set_late":"19:13","set_late_date":"26 June","set_early":"15:27","rise_dec21":"6:57","set_dec21":"15:30","rise_jun21":"3:22","set_jun21":"19:13","noon_jun21":"11:17","noon_dec21":"11:13","noon_late":"11:30","noon_early":"10:59","days_rise_after_9":0,"days_rise_after_830":0,"days_set_after_22":0,"rise_late_min":420.0,"set_jun21_min":1152.8,"rise_dec21_min":416.8,"rise_jun21_min":201.7},{"name":"Qitaihe","cc":"CN","pop":345033,"lat":45.768,"lon":130.9953,"tz":"Asia/Shanghai","std_offset":480,"e_std":-44.0,"e_ann":-44.0,"e_jun":-44.0,"e_dec":-44.0,"rise_late":"6:57","rise_late_date":"2 January","rise_early":"3:26","rise_early_date":"16 June","set_late":"19:10","set_late_date":"26 June","set_early":"15:31","rise_dec21":"6:54","set_dec21":"15:34","rise_jun21":"3:26","set_jun21":"19:09","noon_jun21":"11:18","noon_dec21":"11:14","noon_late":"11:30","noon_early":"11:00","days_rise_after_9":0,"days_rise_after_830":0,"days_set_after_22":0,"rise_late_min":417.1,"set_jun21_min":1149.5,"rise_dec21_min":413.8,"rise_jun21_min":206.1},{"name":"Jixi","cc":"CN","pop":403759,"lat":45.2932,"lon":130.9622,"tz":"Asia/Shanghai","std_offset":480,"e_std":-43.8,"e_ann":-43.8,"e_jun":-43.8,"e_dec":-43.8,"rise_late":"6:56","rise_late_date":"2 January","rise_early":"3:28","rise_early_date":"16 June","set_late":"19:08","set_late_date":"26 June","set_early":"15:33","rise_dec21":"6:52","set_dec21":"15:36","rise_jun21":"3:28","set_jun21":"19:08","noon_jun21":"11:18","noon_dec21":"11:14","noon_late":"11:30","noon_early":"11:00","days_rise_after_9":0,"days_rise_after_830":0,"days_set_after_22":0,"rise_late_min":415.5,"set_jun21_min":1147.6,"rise_dec21_min":412.1,"rise_jun21_min":208.2}],"ahead_std_100k":[{"name":"Kashgar","cc":"CN","pop":506640,"lat":39.4672,"lon":75.9868,"tz":"Asia/Urumqi","std_offset":480,"e_std":176.1,"e_ann":176.1,"e_jun":176.1,"e_dec":176.1,"rise_late":"10:17","rise_late_date":"5 January","rise_early":"7:28","rise_early_date":"14 June","set_late":"22:27","set_late_date":"28 June","set_early":"19:32","rise_dec21":"10:13","set_dec21":"19:35","rise_jun21":"7:29","set_jun21":"22:27","noon_jun21":"14:58","noon_dec21":"14:54","noon_late":"15:10","noon_early":"14:40","days_rise_after_9":162,"days_rise_after_830":212,"days_set_after_22":89,"rise_late_min":616.6,"set_jun21_min":1346.6,"rise_dec21_min":612.6,"rise_jun21_min":449.1},{"name":"Artux","cc":"CN","pop":285000,"lat":39.7084,"lon":76.1797,"tz":"Asia/Urumqi","std_offset":480,"e_std":175.3,"e_ann":175.3,"e_jun":175.3,"e_dec":175.3,"rise_late":"10:17","rise_late_date":"5 January","rise_early":"7:27","rise_early_date":"14 June","set_late":"22:27","set_late_date":"28 June","set_early":"19:31","rise_dec21":"10:13","set_dec21":"19:34","rise_jun21":"7:28","set_jun21":"22:27","noon_jun21":"14:57","noon_dec21":"14:53","noon_late":"15:10","noon_early":"14:39","days_rise_after_9":161,"days_rise_after_830":211,"days_set_after_22":88,"rise_late_min":616.5,"set_jun21_min":1346.6,"rise_dec21_min":612.5,"rise_jun21_min":447.5},{"name":"Shache","cc":"CN","pop":128145,"lat":38.4167,"lon":77.2406,"tz":"Asia/Urumqi","std_offset":480,"e_std":171.0,"e_ann":171.0,"e_jun":171.0,"e_dec":171.0,"rise_late":"10:09","rise_late_date":"5 January","rise_early":"7:27","rise_early_date":"14 June","set_late":"22:19","set_late_date":"28 June","set_early":"19:30","rise_dec21":"10:04","set_dec21":"19:34","rise_jun21":"7:27","set_jun21":"22:18","noon_jun21":"14:53","noon_dec21":"14:49","noon_late":"15:05","noon_early":"14:35","days_rise_after_9":152,"days_rise_after_830":205,"days_set_after_22":74,"rise_late_min":608.6,"set_jun21_min":1338.3,"rise_dec21_min":604.4,"rise_jun21_min":447.4},{"name":"Tumxuk","cc":"CN","pop":135727,"lat":39.8698,"lon":79.0612,"tz":"Asia/Urumqi","std_offset":480,"e_std":163.8,"e_ann":163.8,"e_jun":163.8,"e_dec":163.8,"rise_late":"10:05","rise_late_date":"5 January","rise_early":"7:15","rise_early_date":"14 June","set_late":"22:16","set_late_date":"28 June","set_early":"19:19","rise_dec21":"10:01","set_dec21":"19:22","rise_jun21":"7:15","set_jun21":"22:16","noon_jun21":"14:46","noon_dec21":"14:42","noon_late":"14:58","noon_early":"14:27","days_rise_after_9":143,"days_rise_after_830":191,"days_set_after_22":66,"rise_late_min":605.5,"set_jun21_min":1335.6,"rise_dec21_min":601.5,"rise_jun21_min":435.5},{"name":"Gujangbagh","cc":"CN","pop":408894,"lat":37.1093,"lon":79.9343,"tz":"Asia/Urumqi","std_offset":480,"e_std":160.3,"e_ann":160.3,"e_jun":160.3,"e_dec":160.3,"rise_late":"9:54","rise_late_date":"6 January","rise_early":"7:20","rise_early_date":"13 June","set_late":"22:04","set_late_date":"28 June","set_early":"19:23","rise_dec21":"9:50","set_dec21":"19:27","rise_jun21":"7:21","set_jun21":"22:04","noon_jun21":"14:42","noon_dec21":"14:38","noon_late":"14:54","noon_early":"14:24","days_rise_after_9":133,"days_rise_after_830":186,"days_set_after_22":35,"rise_late_min":594.3,"set_jun21_min":1323.5,"rise_dec21_min":589.9,"rise_jun21_min":440.5},{"name":"Aqsu","cc":"CN","pop":535657,"lat":41.1842,"lon":80.2792,"tz":"Asia/Urumqi","std_offset":480,"e_std":158.9,"e_ann":158.9,"e_jun":158.9,"e_dec":158.9,"rise_late":"10:05","rise_late_date":"4 January","rise_early":"7:06","rise_early_date":"15 June","set_late":"22:16","set_late_date":"27 June","set_early":"19:10","rise_dec21":"10:01","set_dec21":"19:13","rise_jun21":"7:06","set_jun21":"22:15","noon_jun21":"14:41","noon_dec21":"14:37","noon_late":"14:53","noon_early":"14:22","days_rise_after_9":137,"days_rise_after_830":183,"days_set_after_22":64,"rise_late_min":604.5,"set_jun21_min":1335.1,"rise_dec21_min":600.7,"rise_jun21_min":426.2},{"name":"Huocheng","cc":"CN","pop":360000,"lat":44.053,"lon":80.8717,"tz":"Asia/Urumqi","std_offset":480,"e_std":156.5,"e_ann":156.5,"e_jun":156.5,"e_dec":156.5,"rise_late":"10:11","rise_late_date":"3 January","rise_early":"6:53","rise_early_date":"15 June","set_late":"22:24","set_late_date":"27 June","set_early":"18:58","rise_dec21":"10:08","set_dec21":"19:01","rise_jun21":"6:53","set_jun21":"22:23","noon_jun21":"14:38","noon_dec21":"14:34","noon_late":"14:51","noon_early":"14:20","days_rise_after_9":138,"days_rise_after_830":179,"days_set_after_22":75,"rise_late_min":611.5,"set_jun21_min":1343.2,"rise_dec21_min":608.0,"rise_jun21_min":413.4},{"name":"Ālā'ĕr","cc":"CN","pop":126259,"lat":40.5418,"lon":81.2657,"tz":"Asia/Urumqi","std_offset":480,"e_std":154.9,"e_ann":154.9,"e_jun":154.9,"e_dec":154.9,"rise_late":"9:59","rise_late_date":"4 January","rise_early":"7:04","rise_early_date":"14 June","set_late":"22:10","set_late_date":"27 June","set_early":"19:08","rise_dec21":"9:55","set_dec21":"19:11","rise_jun21":"7:04","set_jun21":"22:09","noon_jun21":"14:37","noon_dec21":"14:33","noon_late":"14:49","noon_early":"14:18","days_rise_after_9":129,"days_rise_after_830":177,"days_set_after_22":49,"rise_late_min":598.6,"set_jun21_min":1329.0,"rise_dec21_min":594.7,"rise_jun21_min":424.4},{"name":"Ghulja","cc":"CN","pop":269158,"lat":43.9151,"lon":81.3215,"tz":"Asia/Urumqi","std_offset":480,"e_std":154.7,"e_ann":154.7,"e_jun":154.7,"e_dec":154.7,"rise_late":"10:09","rise_late_date":"3 January","rise_early":"6:52","rise_early_date":"15 June","set_late":"22:21","set_late_date":"27 June","set_early":"18:57","rise_dec21":"10:06","set_dec21":"19:00","rise_jun21":"6:52","set_jun21":"22:21","noon_jun21":"14:36","noon_dec21":"14:33","noon_late":"14:49","noon_early":"14:18","days_rise_after_9":136,"days_rise_after_830":176,"days_set_after_22":70,"rise_late_min":609.2,"set_jun21_min":1340.8,"rise_dec21_min":605.7,"rise_jun21_min":412.2},{"name":"Bole","cc":"CN","pop":235585,"lat":44.8933,"lon":82.0699,"tz":"Asia/Urumqi","std_offset":480,"e_std":151.7,"e_ann":151.7,"e_jun":151.7,"e_dec":151.7,"rise_late":"10:10","rise_late_date":"2 January","rise_early":"6:45","rise_early_date":"16 June","set_late":"22:22","set_late_date":"26 June","set_early":"18:50","rise_dec21":"10:06","set_dec21":"18:53","rise_jun21":"6:45","set_jun21":"22:22","noon_jun21":"14:33","noon_dec21":"14:30","noon_late":"14:46","noon_early":"14:15","days_rise_after_9":132,"days_rise_after_830":172,"days_set_after_22":71,"rise_late_min":609.6,"set_jun21_min":1341.6,"rise_dec21_min":606.3,"rise_jun21_min":405.4}],"n_100k":6286,"latest_rise_100k_55":[{"name":"Kashgar","cc":"CN","pop":506640,"lat":39.4672,"lon":75.9868,"tz":"Asia/Urumqi","std_offset":480,"e_std":176.1,"e_ann":176.1,"e_jun":176.1,"e_dec":176.1,"rise_late":"10:17","rise_late_date":"5 January","rise_early":"7:28","rise_early_date":"14 June","set_late":"22:27","set_late_date":"28 June","set_early":"19:32","rise_dec21":"10:13","set_dec21":"19:35","rise_jun21":"7:29","set_jun21":"22:27","noon_jun21":"14:58","noon_dec21":"14:54","noon_late":"15:10","noon_early":"14:40","days_rise_after_9":162,"days_rise_after_830":212,"days_set_after_22":89,"rise_late_min":616.6,"set_jun21_min":1346.6,"rise_dec21_min":612.6,"rise_jun21_min":449.1},{"name":"Artux","cc":"CN","pop":285000,"lat":39.7084,"lon":76.1797,"tz":"Asia/Urumqi","std_offset":480,"e_std":175.3,"e_ann":175.3,"e_jun":175.3,"e_dec":175.3,"rise_late":"10:17","rise_late_date":"5 January","rise_early":"7:27","rise_early_date":"14 June","set_late":"22:27","set_late_date":"28 June","set_early":"19:31","rise_dec21":"10:13","set_dec21":"19:34","rise_jun21":"7:28","set_jun21":"22:27","noon_jun21":"14:57","noon_dec21":"14:53","noon_late":"15:10","noon_early":"14:39","days_rise_after_9":161,"days_rise_after_830":211,"days_set_after_22":88,"rise_late_min":616.5,"set_jun21_min":1346.6,"rise_dec21_min":612.5,"rise_jun21_min":447.5},{"name":"Tacheng","cc":"CN","pop":161037,"lat":46.7454,"lon":82.9585,"tz":"Asia/Urumqi","std_offset":480,"e_std":148.2,"e_ann":148.2,"e_jun":148.2,"e_dec":148.2,"rise_late":"10:13","rise_late_date":"1 January","rise_early":"6:34","rise_early_date":"16 June","set_late":"22:26","set_late_date":"26 June","set_early":"18:40","rise_dec21":"10:10","set_dec21":"18:42","rise_jun21":"6:34","set_jun21":"22:26","noon_jun21":"14:30","noon_dec21":"14:26","noon_late":"14:42","noon_early":"14:12","days_rise_after_9":131,"days_rise_after_830":168,"days_set_after_22":75,"rise_late_min":613.0,"set_jun21_min":1345.8,"rise_dec21_min":609.8,"rise_jun21_min":394.1},{"name":"Huocheng","cc":"CN","pop":360000,"lat":44.053,"lon":80.8717,"tz":"Asia/Urumqi","std_offset":480,"e_std":156.5,"e_ann":156.5,"e_jun":156.5,"e_dec":156.5,"rise_late":"10:11","rise_late_date":"3 January","rise_early":"6:53","rise_early_date":"15 June","set_late":"22:24","set_late_date":"27 June","set_early":"18:58","rise_dec21":"10:08","set_dec21":"19:01","rise_jun21":"6:53","set_jun21":"22:23","noon_jun21":"14:38","noon_dec21":"14:34","noon_late":"14:51","noon_early":"14:20","days_rise_after_9":138,"days_rise_after_830":179,"days_set_after_22":75,"rise_late_min":611.5,"set_jun21_min":1343.2,"rise_dec21_min":608.0,"rise_jun21_min":413.4},{"name":"Bole","cc":"CN","pop":235585,"lat":44.8933,"lon":82.0699,"tz":"Asia/Urumqi","std_offset":480,"e_std":151.7,"e_ann":151.7,"e_jun":151.7,"e_dec":151.7,"rise_late":"10:10","rise_late_date":"2 January","rise_early":"6:45","rise_early_date":"16 June","set_late":"22:22","set_late_date":"26 June","set_early":"18:50","rise_dec21":"10:06","set_dec21":"18:53","rise_jun21":"6:45","set_jun21":"22:22","noon_jun21":"14:33","noon_dec21":"14:30","noon_late":"14:46","noon_early":"14:15","days_rise_after_9":132,"days_rise_after_830":172,"days_set_after_22":71,"rise_late_min":609.6,"set_jun21_min":1341.6,"rise_dec21_min":606.3,"rise_jun21_min":405.4},{"name":"Ghulja","cc":"CN","pop":269158,"lat":43.9151,"lon":81.3215,"tz":"Asia/Urumqi","std_offset":480,"e_std":154.7,"e_ann":154.7,"e_jun":154.7,"e_dec":154.7,"rise_late":"10:09","rise_late_date":"3 January","rise_early":"6:52","rise_early_date":"15 June","set_late":"22:21","set_late_date":"27 June","set_early":"18:57","rise_dec21":"10:06","set_dec21":"19:00","rise_jun21":"6:52","set_jun21":"22:21","noon_jun21":"14:36","noon_dec21":"14:33","noon_late":"14:49","noon_early":"14:18","days_rise_after_9":136,"days_rise_after_830":176,"days_set_after_22":70,"rise_late_min":609.2,"set_jun21_min":1340.8,"rise_dec21_min":605.7,"rise_jun21_min":412.2},{"name":"Shache","cc":"CN","pop":128145,"lat":38.4167,"lon":77.2406,"tz":"Asia/Urumqi","std_offset":480,"e_std":171.0,"e_ann":171.0,"e_jun":171.0,"e_dec":171.0,"rise_late":"10:09","rise_late_date":"5 January","rise_early":"7:27","rise_early_date":"14 June","set_late":"22:19","set_late_date":"28 June","set_early":"19:30","rise_dec21":"10:04","set_dec21":"19:34","rise_jun21":"7:27","set_jun21":"22:18","noon_jun21":"14:53","noon_dec21":"14:49","noon_late":"15:05","noon_early":"14:35","days_rise_after_9":152,"days_rise_after_830":205,"days_set_after_22":74,"rise_late_min":608.6,"set_jun21_min":1338.3,"rise_dec21_min":604.4,"rise_jun21_min":447.4},{"name":"Tumxuk","cc":"CN","pop":135727,"lat":39.8698,"lon":79.0612,"tz":"Asia/Urumqi","std_offset":480,"e_std":163.8,"e_ann":163.8,"e_jun":163.8,"e_dec":163.8,"rise_late":"10:05","rise_late_date":"5 January","rise_early":"7:15","rise_early_date":"14 June","set_late":"22:16","set_late_date":"28 June","set_early":"19:19","rise_dec21":"10:01","set_dec21":"19:22","rise_jun21":"7:15","set_jun21":"22:16","noon_jun21":"14:46","noon_dec21":"14:42","noon_late":"14:58","noon_early":"14:27","days_rise_after_9":143,"days_rise_after_830":191,"days_set_after_22":66,"rise_late_min":605.5,"set_jun21_min":1335.6,"rise_dec21_min":601.5,"rise_jun21_min":435.5},{"name":"Aqsu","cc":"CN","pop":535657,"lat":41.1842,"lon":80.2792,"tz":"Asia/Urumqi","std_offset":480,"e_std":158.9,"e_ann":158.9,"e_jun":158.9,"e_dec":158.9,"rise_late":"10:05","rise_late_date":"4 January","rise_early":"7:06","rise_early_date":"15 June","set_late":"22:16","set_late_date":"27 June","set_early":"19:10","rise_dec21":"10:01","set_dec21":"19:13","rise_jun21":"7:06","set_jun21":"22:15","noon_jun21":"14:41","noon_dec21":"14:37","noon_late":"14:53","noon_early":"14:22","days_rise_after_9":137,"days_rise_after_830":183,"days_set_after_22":64,"rise_late_min":604.5,"set_jun21_min":1335.1,"rise_dec21_min":600.7,"rise_jun21_min":426.2},{"name":"Karamay","cc":"CN","pop":261445,"lat":45.5847,"lon":84.8872,"tz":"Asia/Urumqi","std_offset":480,"e_std":140.5,"e_ann":140.5,"e_jun":140.5,"e_dec":140.5,"rise_late":"10:01","rise_late_date":"2 January","rise_early":"6:31","rise_early_date":"16 June","set_late":"22:14","set_late_date":"26 June","set_early":"18:37","rise_dec21":"9:58","set_dec21":"18:39","rise_jun21":"6:31","set_jun21":"22:13","noon_jun21":"14:22","noon_dec21":"14:18","noon_late":"14:35","noon_early":"14:04","days_rise_after_9":119,"days_rise_after_830":157,"days_set_after_22":54,"rise_late_min":600.9,"set_jun21_min":1333.2,"rise_dec21_min":597.6,"rise_jun21_min":391.3}],"latest_set_100k_55":[{"name":"Kashgar","cc":"CN","pop":506640,"lat":39.4672,"lon":75.9868,"tz":"Asia/Urumqi","std_offset":480,"e_std":176.1,"e_ann":176.1,"e_jun":176.1,"e_dec":176.1,"rise_late":"10:17","rise_late_date":"5 January","rise_early":"7:28","rise_early_date":"14 June","set_late":"22:27","set_late_date":"28 June","set_early":"19:32","rise_dec21":"10:13","set_dec21":"19:35","rise_jun21":"7:29","set_jun21":"22:27","noon_jun21":"14:58","noon_dec21":"14:54","noon_late":"15:10","noon_early":"14:40","days_rise_after_9":162,"days_rise_after_830":212,"days_set_after_22":89,"rise_late_min":616.6,"set_jun21_min":1346.6,"rise_dec21_min":612.6,"rise_jun21_min":449.1},{"name":"Artux","cc":"CN","pop":285000,"lat":39.7084,"lon":76.1797,"tz":"Asia/Urumqi","std_offset":480,"e_std":175.3,"e_ann":175.3,"e_jun":175.3,"e_dec":175.3,"rise_late":"10:17","rise_late_date":"5 January","rise_early":"7:27","rise_early_date":"14 June","set_late":"22:27","set_late_date":"28 June","set_early":"19:31","rise_dec21":"10:13","set_dec21":"19:34","rise_jun21":"7:28","set_jun21":"22:27","noon_jun21":"14:57","noon_dec21":"14:53","noon_late":"15:10","noon_early":"14:39","days_rise_after_9":161,"days_rise_after_830":211,"days_set_after_22":88,"rise_late_min":616.5,"set_jun21_min":1346.6,"rise_dec21_min":612.5,"rise_jun21_min":447.5},{"name":"Tacheng","cc":"CN","pop":161037,"lat":46.7454,"lon":82.9585,"tz":"Asia/Urumqi","std_offset":480,"e_std":148.2,"e_ann":148.2,"e_jun":148.2,"e_dec":148.2,"rise_late":"10:13","rise_late_date":"1 January","rise_early":"6:34","rise_early_date":"16 June","set_late":"22:26","set_late_date":"26 June","set_early":"18:40","rise_dec21":"10:10","set_dec21":"18:42","rise_jun21":"6:34","set_jun21":"22:26","noon_jun21":"14:30","noon_dec21":"14:26","noon_late":"14:42","noon_early":"14:12","days_rise_after_9":131,"days_rise_after_830":168,"days_set_after_22":75,"rise_late_min":613.0,"set_jun21_min":1345.8,"rise_dec21_min":609.8,"rise_jun21_min":394.1},{"name":"Huocheng","cc":"CN","pop":360000,"lat":44.053,"lon":80.8717,"tz":"Asia/Urumqi","std_offset":480,"e_std":156.5,"e_ann":156.5,"e_jun":156.5,"e_dec":156.5,"rise_late":"10:11","rise_late_date":"3 January","rise_early":"6:53","rise_early_date":"15 June","set_late":"22:24","set_late_date":"27 June","set_early":"18:58","rise_dec21":"10:08","set_dec21":"19:01","rise_jun21":"6:53","set_jun21":"22:23","noon_jun21":"14:38","noon_dec21":"14:34","noon_late":"14:51","noon_early":"14:20","days_rise_after_9":138,"days_rise_after_830":179,"days_set_after_22":75,"rise_late_min":611.5,"set_jun21_min":1343.2,"rise_dec21_min":608.0,"rise_jun21_min":413.4},{"name":"Brest","cc":"FR","pop":144899,"lat":48.3903,"lon":-4.4863,"tz":"Europe/Paris","std_offset":60,"e_std":77.9,"e_ann":112.5,"e_jun":137.9,"e_dec":77.9,"rise_late":"9:09","rise_late_date":"1 January","rise_early":"6:16","rise_early_date":"16 June","set_late":"22:23","set_late_date":"25 June","set_early":"17:23","rise_dec21":"9:07","set_dec21":"17:25","rise_jun21":"6:17","set_jun21":"22:23","noon_jun21":"14:20","noon_dec21":"13:16","noon_late":"14:25","noon_early":"13:01","days_rise_after_9":40,"days_rise_after_830":101,"days_set_after_22":68,"rise_late_min":549.4,"set_jun21_min":1343.0,"rise_dec21_min":546.6,"rise_jun21_min":376.5},{"name":"Bole","cc":"CN","pop":235585,"lat":44.8933,"lon":82.0699,"tz":"Asia/Urumqi","std_offset":480,"e_std":151.7,"e_ann":151.7,"e_jun":151.7,"e_dec":151.7,"rise_late":"10:10","rise_late_date":"2 January","rise_early":"6:45","rise_early_date":"16 June","set_late":"22:22","set_late_date":"26 June","set_early":"18:50","rise_dec21":"10:06","set_dec21":"18:53","rise_jun21":"6:45","set_jun21":"22:22","noon_jun21":"14:33","noon_dec21":"14:30","noon_late":"14:46","noon_early":"14:15","days_rise_after_9":132,"days_rise_after_830":172,"days_set_after_22":71,"rise_late_min":609.6,"set_jun21_min":1341.6,"rise_dec21_min":606.3,"rise_jun21_min":405.4},{"name":"Ghulja","cc":"CN","pop":269158,"lat":43.9151,"lon":81.3215,"tz":"Asia/Urumqi","std_offset":480,"e_std":154.7,"e_ann":154.7,"e_jun":154.7,"e_dec":154.7,"rise_late":"10:09","rise_late_date":"3 January","rise_early":"6:52","rise_early_date":"15 June","set_late":"22:21","set_late_date":"27 June","set_early":"18:57","rise_dec21":"10:06","set_dec21":"19:00","rise_jun21":"6:52","set_jun21":"22:21","noon_jun21":"14:36","noon_dec21":"14:33","noon_late":"14:49","noon_early":"14:18","days_rise_after_9":136,"days_rise_after_830":176,"days_set_after_22":70,"rise_late_min":609.2,"set_jun21_min":1340.8,"rise_dec21_min":605.7,"rise_jun21_min":412.2},{"name":"Shache","cc":"CN","pop":128145,"lat":38.4167,"lon":77.2406,"tz":"Asia/Urumqi","std_offset":480,"e_std":171.0,"e_ann":171.0,"e_jun":171.0,"e_dec":171.0,"rise_late":"10:09","rise_late_date":"5 January","rise_early":"7:27","rise_early_date":"14 June","set_late":"22:19","set_late_date":"28 June","set_early":"19:30","rise_dec21":"10:04","set_dec21":"19:34","rise_jun21":"7:27","set_jun21":"22:18","noon_jun21":"14:53","noon_dec21":"14:49","noon_late":"15:05","noon_early":"14:35","days_rise_after_9":152,"days_rise_after_830":205,"days_set_after_22":74,"rise_late_min":608.6,"set_jun21_min":1338.3,"rise_dec21_min":604.4,"rise_jun21_min":447.4},{"name":"A Coruña","cc":"ES","pop":250438,"lat":43.3713,"lon":-8.396,"tz":"Europe/Madrid","std_offset":60,"e_std":93.6,"e_ann":128.1,"e_jun":153.6,"e_dec":93.6,"rise_late":"9:06","rise_late_date":"3 January","rise_early":"6:52","rise_early_date":"15 June","set_late":"22:18","set_late_date":"27 June","set_early":"17:58","rise_dec21":"9:03","set_dec21":"18:01","rise_jun21":"6:53","set_jun21":"22:18","noon_jun21":"14:35","noon_dec21":"13:32","noon_late":"14:40","noon_early":"13:17","days_rise_after_9":35,"days_rise_after_830":115,"days_set_after_22":66,"rise_late_min":546.2,"set_jun21_min":1337.7,"rise_dec21_min":542.8,"rise_jun21_min":413.1},{"name":"Tumxuk","cc":"CN","pop":135727,"lat":39.8698,"lon":79.0612,"tz":"Asia/Urumqi","std_offset":480,"e_std":163.8,"e_ann":163.8,"e_jun":163.8,"e_dec":163.8,"rise_late":"10:05","rise_late_date":"5 January","rise_early":"7:15","rise_early_date":"14 June","set_late":"22:16","set_late_date":"28 June","set_early":"19:19","rise_dec21":"10:01","set_dec21":"19:22","rise_jun21":"7:15","set_jun21":"22:16","noon_jun21":"14:46","noon_dec21":"14:42","noon_late":"14:58","noon_early":"14:27","days_rise_after_9":143,"days_rise_after_830":191,"days_set_after_22":66,"rise_late_min":605.5,"set_jun21_min":1335.6,"rise_dec21_min":601.5,"rise_jun21_min":435.5}]},"population":{"people":8031922649,"hexes":71246,"e_std":{"mean":15.369129227529292,"median":13.926000000000045,"ahead":0.7104622188699069,"ahead_30":0.2516700324861408,"ahead_60":0.049192760098255274,"ahead_90":0.005696528963173784,"ahead_120":0.0031451575300149534,"behind_30":0.017929178515922232,"behind_60":1.4175933331999398e-05,"within_30":0.7304007889979369,"within_15":0.42074461690946996},"e_ann":{"mean":20.615525550180713,"median":19.051600000000008,"ahead":0.7606581877081022,"ahead_30":0.32850509340108064,"ahead_60":0.09154264154816563,"ahead_90":0.012034264425098052,"ahead_120":0.0036404540080624973,"behind_30":0.016984280845506433,"behind_60":1.3674185472101649e-05,"within_30":0.6545106257534129,"within_15":0.3602847084639547},"e_jun":{"mean":23.897208118892628,"median":19.733999999999924,"ahead":0.7599489659876081,"ahead_30":0.36136359086592595,"ahead_60":0.13559794592090574,"ahead_90":0.03688833931149578,"ahead_120":0.009386625879593926,"behind_30":0.016984085873509264,"behind_60":1.3674185472101649e-05,"within_30":0.6216523232605649,"within_15":0.35398961883105157},"e_dec":{"mean":15.684844028432625,"median":13.970800000000054,"ahead":0.7113751966612097,"ahead_30":0.25442042214567645,"ahead_60":0.053540775078746654,"ahead_90":0.00820801704411434,"ahead_120":0.0031461066178402634,"behind_30":0.017929171419240345,"behind_60":1.4175933331999398e-05,"within_30":0.7276504064350832,"within_15":0.41951068445853507},"dst_share":0.14878483598802894,"xinjiang_people":25232194},"meta":{"year":2026,"tz_version":"2026e","tz_boundaries":"timezone-boundary-builder 2026a","zones":419,"zones_with_change_2026":130,"doi":"10.5281/zenodo.23757706","geonames_retrieved":"2026-10-29","geonames_rows":171731,"places":148693,"geonames_tz_agree":0.9987625427057273,"geonames_tz_disagree_n":184,"places_used":148692}};
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const fmt = n => Math.round(n).toLocaleString("en-GB");
+const isDark = () => document.documentElement.dataset.theme === "dark" || (document.documentElement.dataset.theme !== "light" && matchMedia("(prefers-color-scheme: dark)").matches);
+const tip = $("tip");
+function showTip(h, x, y) { tip.innerHTML = h; tip.style.display = "block"; const w = tip.offsetWidth; x = Math.max(w / 2 + 8, Math.min(innerWidth - w / 2 - 8, x)); tip.style.left = x + scrollX + "px"; tip.style.top = y + scrollY + "px"; }
+function hideTip() { tip.style.display = "none"; }
+const redraws = [];
+function resp(box, render) { let last = 0; const go = force => { const w = Math.max(280, Math.round(box.clientWidth)); if (!force && Math.abs(w - last) < 4) return; last = w; box.innerHTML = ""; render(w, w < 560); }; new ResizeObserver(() => go()).observe(box); go(); redraws.push(() => go(true)); }
+const SVGNS = "http://www.w3.org/2000/svg";
+function svg(w, h) { const s = document.createElementNS(SVGNS, "svg"); s.setAttribute("viewBox", `0 0 ${w} ${h}`); s.setAttribute("role", "img"); return s; }
+function el(p, tag, a, txt) { const e = document.createElementNS(SVGNS, tag); for (const k in a) e.setAttribute(k, a[k]); if (txt != null) e.textContent = txt; p.appendChild(e); return e; }
+(function () { const k = "cvs_theme"; let t = null; try { t = localStorage.getItem(k); } catch (e) {} if (t) document.documentElement.dataset.theme = t;
+  $("theme").onclick = () => { const d = isDark() ? "light" : "dark"; document.documentElement.dataset.theme = d; try { localStorage.setItem(k, d); } catch (e) {} redraws.forEach(f => f()); if (window.mapRestyle) mapRestyle(); }; })();
+
+/* ===== time helpers ===== */
+const YEAR = R.meta.year;
+const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const MDAYS = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+function doyDate(d) { let m = 0; while (d > MDAYS[m]) { d -= MDAYS[m]; m++; } return [d, m]; }
+const dateLabel = d => { const [dd, m] = doyDate(d); return dd + " " + MONTHS[m]; };
+function hm(min) { if (min == null || isNaN(min)) return "none"; let m = Math.round(min); m = ((m % 1440) + 1440) % 1440; return Math.floor(m / 60) + ":" + String(m % 60).padStart(2, "0"); }
+function dur(min) { const s = min < 0 ? "behind" : "ahead"; let m = Math.round(Math.abs(min)); const h = Math.floor(m / 60); m %= 60; return (h ? h + " h " + (m ? m + " min" : "") : m + " min").trim() + " " + s; }
+const wrap = e => ((e + 720) % 1440 + 1440) % 1440 - 720;
+const offStr = m => "UTC" + (m < 0 ? " minus " : " plus ") + Math.floor(Math.abs(m) / 60) + (Math.abs(m) % 60 ? ":" + String(Math.abs(m) % 60).padStart(2, "0") : "");
+
+/* NOAA solar equations, the same as code/common.py; returns minutes after 00:00 UTC */
+function sunEq(jd) {
+  const T = (jd - 2451545) / 36525, rad = Math.PI / 180;
+  const L0 = ((280.46646 + T * (36000.76983 + T * 0.0003032)) % 360 + 360) % 360;
+  const M = 357.52911 + T * (35999.05029 - 0.0001537 * T), e = 0.016708634 - T * (0.000042037 + 0.0000001267 * T), Mr = M * rad;
+  const C = Math.sin(Mr) * (1.914602 - T * (0.004817 + 0.000014 * T)) + Math.sin(2 * Mr) * (0.019993 - 0.000101 * T) + Math.sin(3 * Mr) * 0.000289;
+  const om = 125.04 - 1934.136 * T, lam = L0 + C - 0.00569 - 0.00478 * Math.sin(om * rad);
+  const eps0 = 23 + (26 + (21.448 - T * (46.815 + T * (0.00059 - T * 0.001813))) / 60) / 60, eps = eps0 + 0.00256 * Math.cos(om * rad);
+  const decl = Math.asin(Math.sin(eps * rad) * Math.sin(lam * rad)) / rad;
+  const y = Math.tan(eps * rad / 2) ** 2, L0r = L0 * rad;
+  const eot = 4 * (y * Math.sin(2 * L0r) - 2 * e * Math.sin(Mr) + 4 * e * y * Math.sin(Mr) * Math.cos(2 * L0r) - 0.5 * y * y * Math.sin(4 * L0r) - 1.25 * e * e * Math.sin(2 * Mr)) / rad;
+  return [eot, decl];
+}
+const JD0 = 2461041.5; // 1 January 2026, 00:00 UTC
+function sunTimes(lat, lon, doy) {
+  const jd0 = JD0 + doy - 1, rad = Math.PI / 180;
+  let noon = 720 - 4 * lon; for (let i = 0; i < 2; i++) noon = 720 - 4 * lon - sunEq(jd0 + noon / 1440)[0];
+  const out = [];
+  for (const sg of [-1, 1]) { let t = noon, ok = true;
+    for (let i = 0; i < 3; i++) { const [eot, dec] = sunEq(jd0 + t / 1440); const c = (Math.sin(-0.833 * rad) - Math.sin(lat * rad) * Math.sin(dec * rad)) / (Math.cos(lat * rad) * Math.cos(dec * rad)); if (c > 1 || c < -1) { ok = false; break; } t = 720 - 4 * lon - eot + sg * 4 * Math.acos(c) / rad; }
+    out.push(ok ? t : NaN); }
+  return [noon, out[0], out[1]];
+}
+
+/* ===== data ===== */
+let D = null, Z = null, SRCG = null, lmap = null;
+const S = { mode: "day", doy: 172, sel: null, histK: "e_ann", galK: "rise" };
+function zoneOffset(z, doy) { const tr = Z[z].tr; let o = tr[0][1]; for (const t of tr) { if (t[0] <= doy) o = t[1]; else break; } return o; }
+function zoneAnn(z) { if (Z[z]._ann != null) return Z[z]._ann; let s = 0; for (let d = 1; d <= 365; d++) s += zoneOffset(z, d); return Z[z]._ann = s / 365; }
+function zoneVal(z) { return S.mode === "std" ? Z[z].std : S.mode === "ann" ? zoneAnn(z) : zoneOffset(z, S.doy); }
+function zoneAt(lat, lon) { const G = D.grid; if (lat > G.n || lat < G.s) return -1; const r = Math.floor((G.n - lat) / G.res), c = Math.min(G.w - 1, Math.floor((lon + 180) / G.res)); return SRCG[r * G.w + c] - 1; }
+
+/* ===== colours ===== */
+const BREAKS = [-60, -30, 0, 30, 60, 90, 120, 150];
+const COLS = ["#24527F", "#5D8EBD", "#B7D2E6", "#FBE6A9", "#F5C064", "#EC9038", "#D8602A", "#B0362A", "#6E1F3C"];
+const LABS = ["", "1 h behind", "30 min", "0", "30 min", "1 h", "1 h 30", "2 h", "2 h 30", ""];
+function cls(e) { let i = 0; while (i < BREAKS.length && e >= BREAKS[i]) i++; return i; }
+const RGB = COLS.map(h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]);
+function legend() {
+  $("legend").innerHTML = COLS.map((c, i) => `<div><i style="background:${c}"></i><span>${i === 0 ? "&lt; 1 h behind" : i === COLS.length - 1 ? "&gt; 2 h 30" : ""}</span></div>`).join("");
+  const box = $("legend"); box.style.position = "relative";
+  const ticks = ["1 h", "30", "0", "30", "1 h", "1 h 30", "2 h", "2 h 30"];
+  ticks.forEach((t, i) => { const s = document.createElement("span"); s.textContent = t; s.style.cssText = `position:absolute;top:14px;left:${(i + 1) / COLS.length * 100}%;transform:translateX(-50%);font:400 10.5px var(--mono);color:var(--muted)`; box.appendChild(s); });
+  box.querySelectorAll(":scope > div > span").forEach(s => s.style.visibility = "hidden"); box.style.paddingBottom = "16px";
+}
+
+/* ===== map ===== */
+const LY = { base: "plain", hills: true, hillK: 45, names: true, nameLvl: 0, lines: true, lineK: 40, tz: true, tzK: 55, colour: 85 };
+const LYDEF = { ...LY };
+try { Object.assign(LY, JSON.parse(localStorage.getItem("cvs_layers") || "{}")); } catch (e) {}
+const saveLY = () => { try { localStorage.setItem("cvs_layers", JSON.stringify(LY)); } catch (e) {} };
+let tiles = {}, landL = null, borderL = null, tzL = null, hillL = null, hillCv = null, HILLIMG = null, nameL = null, colL = null, colCv = null, MAP = null, selM = null;
+const WORLD = window.L ? L.latLngBounds([-85.0511, -180], [85.0511, 180]) : null;
+const CanvasOverlay = window.L ? L.ImageOverlay.extend({ _initImage() { const c = this._image = this._url; L.DomUtil.addClass(c, "leaflet-image-layer"); if (this._zoomAnimated) L.DomUtil.addClass(c, "leaflet-zoom-animated"); c.onselectstart = L.Util.falseFn; c.onmousemove = L.Util.falseFn; } }) : null;
+const merc = lat => Math.log(Math.tan(Math.PI / 4 + lat * Math.PI / 360));
+const imerc = y => (2 * Math.atan(Math.exp(y)) - Math.PI / 2) * 180 / Math.PI;
+function initColourCanvas() {
+  const G = D.grid, W = innerWidth < 700 ? 2400 : 3600, y0 = merc(G.n), y1 = merc(G.s), H = Math.round(W * (y0 - y1) / (2 * Math.PI));
+  colCv = document.createElement("canvas"); colCv.width = W; colCv.height = H;
+  const rows = new Int32Array(H), cols = new Int32Array(W), lon4 = new Float32Array(W);
+  for (let r = 0; r < H; r++) { const lat = imerc(y0 - (r + .5) / H * (y0 - y1)); rows[r] = Math.min(G.h - 1, Math.floor((G.n - lat) / G.res)) * G.w; }
+  for (let c = 0; c < W; c++) { const lon = -180 + (c + .5) * 360 / W; cols[c] = Math.min(G.w - 1, Math.floor((lon + 180) / G.res)); lon4[c] = 4 * lon; }
+  MAP = { W, H, rows, cols, lon4, img: colCv.getContext("2d").createImageData(W, H) };
+}
+function renderColours() {
+  if (!MAP) return;
+  const { W, H, rows, cols, lon4, img } = MAP, d = img.data, off = new Float32Array(Z.length);
+  for (let z = 0; z < Z.length; z++) off[z] = zoneVal(z);
+  const a = Math.round(255 * LY.colour / 100);
+  let p = 0;
+  for (let r = 0; r < H; r++) { const base = rows[r];
+    for (let c = 0; c < W; c++, p += 4) { const z = SRCG[base + cols[c]];
+      if (!z) { d[p + 3] = 0; continue; }
+      const e = wrap(off[z - 1] - lon4[c]), k = RGB[cls(e)];
+      d[p] = k[0]; d[p + 1] = k[1]; d[p + 2] = k[2]; d[p + 3] = a; } }
+  colCv.getContext("2d").putImageData(img, 0, 0);
+  if (colL && colL._image) colL._image.style.opacity = 1;
+}
+function composeHills() {
+  if (!HILLIMG) return;
+  const k = LY.hillK / 100, dark = isDark() || LY.base === "dark", n = HILLIMG.width;
+  const g = hillCv.getContext("2d"), out = g.createImageData(n, n), s = HILLIMG.data, d = out.data;
+  const sh = dark ? [0, 0, 0] : [40, 36, 30];
+  for (let i = 0; i < s.length; i += 4) {
+    const a = s[i] / 255, h = s[i + 1] / 255;
+    if (a >= h * .6) { d[i] = sh[0]; d[i + 1] = sh[1]; d[i + 2] = sh[2]; d[i + 3] = Math.min(255, a * 255 * k * (dark ? 1.1 : .9)); }
+    else { d[i] = 255; d[i + 1] = 255; d[i + 2] = 255; d[i + 3] = h * 255 * k * (dark ? .25 : .6); }
+  }
+  g.putImageData(out, 0, 0);
+}
+function loadHills() {
+  if (HILLIMG) return Promise.resolve();
+  return new Promise((ok, bad) => { const im = new Image(); im.onload = () => { const c = document.createElement("canvas"); c.width = im.width; c.height = im.height; const x = c.getContext("2d", { willReadFrequently: true }); x.drawImage(im, 0, 0); HILLIMG = x.getImageData(0, 0, c.width, c.height); hillCv.width = c.width; hillCv.height = c.height; ok(); }; im.onerror = bad; im.src = "data/hills.png"; });
+}
+function placeNames() {
+  if (!nameL) return; nameL.clearLayers(); if (!LY.names || !D) return;
+  const z = lmap.getZoom(), bb = lmap.getBounds().pad(.05), lvl = LY.nameLvl;
+  const minPop = lvl === 0 ? (z >= 7 ? 50000 : z >= 6 ? 150000 : z >= 5 ? 400000 : z >= 4 ? 1500000 : 4000000) : lvl === 1 ? (z >= 7 ? 15000 : z >= 6 ? 40000 : z >= 5 ? 100000 : z >= 4 ? 400000 : 1500000) : (z >= 6 ? 5000 : z >= 5 ? 30000 : z >= 4 ? 100000 : 500000);
+  const boxes = [], cap = lvl === 2 ? 420 : 240; let n = 0;
+  for (const t of D.places) {
+    if (t[4] < minPop) break;
+    if (!bb.contains([t[2], t[3]])) continue;
+    const p = lmap.latLngToContainerPoint([t[2], t[3]]), rk = t[4] >= 5e6 ? 3 : t[4] >= 1e6 ? 2 : t[4] >= 2e5 ? 1 : 0, fs = rk >= 3 ? 12 : 11;
+    const bx = [p.x - 4, p.y - 8, p.x + 10 + t[0].length * fs * .6, p.y + 7];
+    if (boxes.some(o => bx[0] < o[2] && bx[2] > o[0] && bx[1] < o[3] && bx[3] > o[1])) continue;
+    boxes.push(bx);
+    L.marker([t[2], t[3]], { pane: "names", interactive: false, keyboard: false, icon: L.divIcon({ className: "town r" + rk, html: `<i></i>${esc(t[0])}`, iconSize: null, iconAnchor: [3, 6] }) }).addTo(nameL);
+    if (++n >= cap) break;
+  }
+}
+function applyLayers() {
+  for (const k in tiles) { if (k === LY.base) tiles[k].addTo(lmap); else tiles[k].remove(); }
+  lmap.getContainer().classList.toggle("sat", LY.base === "satellite");
+  lmap.getContainer().style.background = LY.base === "plain" ? css("--sea") : (LY.base === "dark" ? "#2b2b2b" : LY.base === "satellite" ? "#0b1a26" : "#e8e8e8");
+  if (LY.base === "plain") landL.addTo(lmap); else landL.remove();
+  landL.setStyle({ fillColor: css("--land") });
+  renderColours();
+  if (LY.hills) { loadHills().then(() => { composeHills(); hillL.addTo(lmap); }).catch(() => {}); } else hillL.remove();
+  const lc = LY.base === "satellite" || LY.base === "dark" || isDark() ? "#f2eee6" : css("--line");
+  if (LY.lines) { borderL.addTo(lmap); borderL.setStyle({ color: lc, opacity: .15 + .85 * LY.lineK / 100, weight: .4 + LY.lineK / 100 }); } else borderL.remove();
+  if (LY.tz) { tzL.addTo(lmap); tzL.setStyle({ color: lc, opacity: .2 + .8 * LY.tzK / 100, weight: .6 + 1.2 * LY.tzK / 100, dashArray: "4 3" }); } else tzL.remove();
+  if (LY.names) nameL.addTo(lmap); else nameL.remove();
+  placeNames();
+}
+function initLayers() {
+  const Ctl = L.Control.extend({ options: { position: "topright" }, onAdd() {
+    const d = L.DomUtil.create("div"); L.DomEvent.disableClickPropagation(d); L.DomEvent.disableScrollPropagation(d);
+    d.innerHTML = `<button class="lyrBtn" aria-expanded="false" aria-controls="lyrPanel">Map layers</button>
+<div class="lyrPanel" id="lyrPanel" hidden>
+ <div class="row"><label for="lyBase" style="font-weight:600">Base map</label><div class="sub"><select id="lyBase" aria-label="Base map"><option value="plain">Plain paper (offline)</option><option value="light">Light grey (Esri)</option><option value="dark">Dark grey (Esri)</option><option value="satellite">Satellite (Esri)</option></select></div></div>
+ <div class="row"><label><input type="checkbox" id="lyHills"> Hills and mountains</label><div class="sub"><span>strength</span><input type="range" id="lyHillK" min="10" max="100" step="5" aria-label="Hill shading strength"></div></div>
+ <div class="row"><label><input type="checkbox" id="lyNames"> Place names</label><div class="sub"><span>how many</span><select id="lyNameLvl" aria-label="How many place names"><option value="0">Big cities only</option><option value="1">Cities and towns</option><option value="2">Lots</option></select></div></div>
+ <div class="row"><label><input type="checkbox" id="lyLines"> Borders and coasts</label><div class="sub"><span>strength</span><input type="range" id="lyLineK" min="10" max="100" step="5" aria-label="Border line strength"></div></div>
+ <div class="row"><label><input type="checkbox" id="lyTz"> Clock change lines</label><div class="sub"><span>strength</span><input type="range" id="lyTzK" min="10" max="100" step="5" aria-label="Time zone line strength"></div></div>
+ <div class="row"><label style="font-weight:600">Colour</label><div class="sub"><span>strength</span><input type="range" id="lyColour" min="20" max="100" step="5" aria-label="Colour strength"></div></div>
+ <button class="reset" id="lyReset">Reset layers</button>
+</div>`;
+    return d; } });
+  lmap.addControl(new Ctl());
+  const q = $, btn = lmap.getContainer().querySelector(".lyrBtn"), pan = q("lyrPanel");
+  btn.onclick = () => { const o = pan.hidden; pan.hidden = !o; btn.setAttribute("aria-expanded", o); };
+  const sync = () => { q("lyBase").value = LY.base; q("lyHills").checked = LY.hills; q("lyHillK").value = LY.hillK; q("lyNames").checked = LY.names; q("lyNameLvl").value = LY.nameLvl; q("lyLines").checked = LY.lines; q("lyLineK").value = LY.lineK; q("lyTz").checked = LY.tz; q("lyTzK").value = LY.tzK; q("lyColour").value = LY.colour; };
+  const on = (id, ev, f) => q(id).addEventListener(ev, e => { f(e.target); saveLY(); applyLayers(); });
+  on("lyBase", "change", t => { LY.base = t.value; if (t.value === "satellite") { LY.hills = false; q("lyHills").checked = false; } });
+  on("lyHills", "change", t => LY.hills = t.checked); on("lyHillK", "input", t => { LY.hillK = +t.value; LY.hills = true; q("lyHills").checked = true; });
+  on("lyNames", "change", t => LY.names = t.checked); on("lyNameLvl", "change", t => { LY.nameLvl = +t.value; LY.names = true; q("lyNames").checked = true; });
+  on("lyLines", "change", t => LY.lines = t.checked); on("lyLineK", "input", t => { LY.lineK = +t.value; LY.lines = true; q("lyLines").checked = true; });
+  on("lyTz", "change", t => LY.tz = t.checked); on("lyTzK", "input", t => { LY.tzK = +t.value; LY.tz = true; q("lyTz").checked = true; });
+  on("lyColour", "input", t => LY.colour = +t.value);
+  q("lyReset").onclick = () => { Object.assign(LY, LYDEF); saveLY(); sync(); applyLayers(); };
+  sync();
+  lmap.on("zoomend moveend", placeNames);
+}
+window.mapRestyle = () => { if (!lmap) return; applyLayers(); if (S.sel) drawCard(); };
+
+/* ===== mode and date ===== */
+function setPressed(id, attr, val) { document.querySelectorAll(`#${id} .btn`).forEach(b => b.setAttribute("aria-pressed", b.dataset[attr] === String(val) ? "true" : "false")); }
+function todayDoy() { const t = new Date(), s = new Date(t.getFullYear(), 0, 1); return Math.min(365, Math.floor((t - s) / 864e5) + 1); }
+function update() {
+  setPressed("modeSeg", "m", S.mode);
+  $("datebar").style.opacity = S.mode === "day" ? 1 : .45;
+  $("dateBig").textContent = S.mode === "day" ? dateLabel(S.doy) : S.mode === "ann" ? "Year average" : "Winter clock";
+  $("doy").value = S.doy;
+  renderColours();
+  if (S.sel) drawCard();
+}
+
+/* ===== place card ===== */
+function nearestPlace(lat, lon, maxKm) {
+  let best = null, bd = 1e9; const k = Math.cos(lat * Math.PI / 180);
+  for (const p of D.places) { const dy = p[2] - lat, dx = (p[3] - lon) * k, d = dy * dy + dx * dx; if (d < bd) { bd = d; best = p; } }
+  return best && Math.sqrt(bd) * 111 <= maxKm ? best : null;
+}
+function yearSeries(lat, lon, z) {
+  const rise = [], set = [], noon = [];
+  for (let d = 1; d <= 365; d++) { const o = zoneOffset(z, d), [n, r, s] = sunTimes(lat, lon, d); rise.push(r + o); set.push(s + o); noon.push(n + o); }
+  return { rise, set, noon };
+}
+function selectAt(lat, lon, name, fly) {
+  const z = zoneAt(lat, lon);
+  if (z < 0) { S.sel = { lat, lon, z: -1, name: name || "Open sea" }; drawCard(); return; }
+  const np = name ? null : nearestPlace(lat, lon, 25);
+  S.sel = { lat, lon, z, name: name || (np ? np[0] : `${Math.abs(lat).toFixed(2)}°${lat >= 0 ? "N" : "S"}, ${Math.abs(lon).toFixed(2)}°${lon >= 0 ? "E" : "W"}`), near: !name && np, cc: np ? np[1] : "" };
+  S.sel.ser = yearSeries(lat, lon, z);
+  if (lmap) { if (selM) selM.remove(); selM = L.circleMarker([lat, lon], { radius: 7, color: "#fff", weight: 2.5, fillColor: "#1E1B18", fillOpacity: 1 }).addTo(lmap); if (fly) lmap.flyTo([lat, lon], Math.max(lmap.getZoom(), 5), { duration: .6 }); }
+  drawCard();
+}
+let LONDON = null;
+function drawCard() {
+  const s = S.sel; if (!s) return;
+  if (s.z < 0) { $("card").innerHTML = `<div class="big">${esc(s.name)}</div><p class="sub">No time zone here on the map (open sea or Antarctica).</p>`; return; }
+  const zn = Z[s.z], o = zoneVal(s.z), e = wrap(o - 4 * s.lon), d = S.doy;
+  const [n, r, st] = sunTimes(s.lat, s.lon, d), od = zoneOffset(s.z, d);
+  const lr = s.ser.rise.reduce((a, v, i) => (!isNaN(v) && v > a[0] ? [v, i] : a), [-1e9, 0]);
+  const what = S.mode === "day" ? "on " + dateLabel(d) : S.mode === "ann" ? "on average over the year" : "with no daylight saving";
+  const col = COLS[cls(e)];
+  const alt = zn.alt ? `<p class="sub">Legal time is Beijing time. On informal ${esc(zn.alt.name)} (${offStr(zn.alt.std)}) the gap would be ${esc(dur(wrap(zn.alt.std - 4 * s.lon)))}.</p>` : "";
+  const dst = zn.tr.length > 1 ? `Clocks change in ${YEAR}: ${zn.tr.slice(1).map(t => dateLabel(t[0]) + " to " + offStr(t[1])).join("; ")}.` : `No clock changes in ${YEAR}.`;
+  $("card").innerHTML = `<div class="big">${esc(s.name)}</div><p class="sub">${s.near ? "Nearest town within 25 km. " : ""}Time zone ${esc(zn.id)}, ${offStr(od)} on ${dateLabel(d)}.</p>
+  <div class="gap" style="color:${[2, 3, 4, 5].includes(cls(e)) ? "var(--fg)" : col}">${esc(dur(e))}</div><p class="sub">Clock against the sun ${what}.</p>${alt}
+  <dl class="kv"><dt>On ${esc(dateLabel(d))}</dt><dd></dd><dt>Sunrise</dt><dd>${hm(r + od)}</dd><dt>Solar noon</dt><dd>${hm(n + od)}</dd><dt>Sunset</dt><dd>${hm(st + od)}</dd><dt>Latest sunrise</dt><dd>${lr[0] > -1e9 ? hm(lr[0]) + ", " + dateLabel(lr[1] + 1) : "none"}</dd></dl>
+  <h4>Sunrise and sunset through ${YEAR}</h4><div class="chart" id="cardChart"></div><p class="src" style="margin-top:4px">${dst} Grey lines: London.</p>`;
+  yearChart($("cardChart"), s.ser, LONDON, d);
+}
+function yearChart(box, ser, cmp, mark) {
+  resp(box, (W) => {
+    const H = 210, L = 34, Rr = 6, T = 8, B = 20, x = d => L + (W - L - Rr) * (d - .5) / 365;
+    const all = [...ser.rise, ...ser.set, ...(cmp ? [...cmp.rise, ...cmp.set] : [])].filter(v => !isNaN(v));
+    let lo = Math.floor(Math.min(...all) / 120) * 120, hi = Math.ceil(Math.max(...all) / 120) * 120; if (!isFinite(lo)) { lo = 0; hi = 1440; }
+    const y = v => T + (H - T - B) * (v - lo) / (hi - lo);
+    const s = svg(W, H);
+    for (let t = lo; t <= hi; t += 120) { el(s, "line", { x1: L, x2: W - Rr, y1: y(t), y2: y(t), stroke: css("--rule") }); el(s, "text", { x: L - 4, y: y(t) + 4, "text-anchor": "end", class: "lab s m" }, hm(t)); }
+    let acc = 0; MDAYS.forEach((m, i) => { if (i % 2 === 0) el(s, "text", { x: x(acc + m / 2), y: H - 5, "text-anchor": "middle", class: "lab s m" }, MONTHS[i].slice(0, 3)); acc += m; });
+    const path = arr => { let d = "", pen = false; arr.forEach((v, i) => { if (isNaN(v)) { pen = false; return; } d += (pen ? "L" : "M") + x(i + 1).toFixed(1) + " " + y(v).toFixed(1); pen = true; }); return d; };
+    let area = ""; ser.rise.forEach((v, i) => { if (!isNaN(v)) area += (area ? "L" : "M") + x(i + 1).toFixed(1) + " " + y(v).toFixed(1); });
+    for (let i = 364; i >= 0; i--) if (!isNaN(ser.set[i])) area += "L" + x(i + 1).toFixed(1) + " " + y(ser.set[i]).toFixed(1);
+    if (area) el(s, "path", { d: area + "Z", fill: "#F5C064", opacity: .28 });
+    if (cmp) for (const k of ["rise", "set"]) el(s, "path", { d: path(cmp[k]), fill: "none", stroke: css("--muted"), "stroke-width": 1, opacity: .7 });
+    el(s, "path", { d: path(ser.rise), fill: "none", stroke: "#D9661F", "stroke-width": 2 });
+    el(s, "path", { d: path(ser.set), fill: "none", stroke: "#2F5F8F", "stroke-width": 2 });
+    el(s, "path", { d: path(ser.noon), fill: "none", stroke: css("--fg"), "stroke-width": 1, "stroke-dasharray": "3 3" });
+    el(s, "line", { x1: x(mark), x2: x(mark), y1: T, y2: H - B, stroke: css("--fg"), "stroke-width": 1, opacity: .5 });
+    const hov = el(s, "rect", { x: L, y: T, width: W - L - Rr, height: H - T - B, fill: "transparent" });
+    hov.addEventListener("mousemove", ev => { const rc = s.getBoundingClientRect(), d = Math.max(1, Math.min(365, Math.round(((ev.clientX - rc.left) * W / rc.width - L) / (W - L - Rr) * 365 + .5))); showTip(`<b>${dateLabel(d)}</b><br>sunrise ${hm(ser.rise[d - 1])}<br>solar noon ${hm(ser.noon[d - 1])}<br>sunset ${hm(ser.set[d - 1])}`, ev.pageX - scrollX, ev.pageY - scrollY); });
+    hov.addEventListener("mouseleave", hideTip);
+    box.appendChild(s);
+  });
+}
+
+/* ===== charts ===== */
+function histChart() {
+  resp($("cHist"), (W, narrow) => {
+    const H = narrow ? 240 : 280, L = 40, Rr = 8, T = 10, B = 34, h = R.hist, b = h.bins, v = h[S.histK], n = v.length;
+    const max = Math.max(...["e_ann", "e_std", "e_jun", "e_dec"].flatMap(k => h[k]));
+    const x = i => L + (W - L - Rr) * i / n, y = val => T + (H - T - B) * (1 - val / max);
+    const s = svg(W, H);
+    for (const t of [0, .05, .1, .15, .2, .25].filter(t => t <= max)) { el(s, "line", { x1: L, x2: W - Rr, y1: y(t), y2: y(t), stroke: css("--rule") }); el(s, "text", { x: L - 5, y: y(t) + 4, "text-anchor": "end", class: "lab s m" }, Math.round(t * 100) + "%"); }
+    v.forEach((val, i) => { const mid = (b[i] + b[i + 1]) / 2, r = el(s, "rect", { x: x(i) + .5, y: y(val), width: Math.max(1, x(i + 1) - x(i) - 1), height: H - B - y(val), fill: COLS[cls(mid)], stroke: isDark() ? "none" : "rgba(0,0,0,.12)" });
+      r.addEventListener("mousemove", ev => showTip(`${b[i]} to ${b[i + 1]} min: ${(val * 100).toFixed(1)}% of people`, ev.pageX - scrollX, ev.pageY - scrollY)); r.addEventListener("mouseleave", hideTip); });
+    const zx = x((0 - b[0]) / 15); el(s, "line", { x1: zx, x2: zx, y1: T, y2: H - B, stroke: css("--fg"), "stroke-width": 1.5 });
+    for (let m = -120; m <= 300; m += 60) { const xx = x((m - b[0]) / 15); el(s, "text", { x: xx, y: H - B + 14, "text-anchor": "middle", class: "lab s m" }, m === 0 ? "0" : (m > 0 ? "+" : "") + m / 60 + " h"); }
+    el(s, "text", { x: W - Rr, y: H - 4, "text-anchor": "end", class: "lab s m" }, "clock ahead of the sun");
+    el(s, "text", { x: L, y: H - 4, class: "lab s m" }, "behind");
+    $("cHist").appendChild(s);
+  });
+}
+function countryChart() {
+  resp($("cCountries"), (W, narrow) => {
+    const rows = R.country_chart, lw = narrow ? 112 : 170, rh = 22, H = rows.length * rh + 30;
+    const lo = -60, hi = 120, X = v => lw + (W - lw - 50) * (v - lo) / (hi - lo);
+    const s = svg(W, H);
+    for (let t = lo; t <= hi; t += 30) { el(s, "line", { x1: X(t), x2: X(t), y1: 0, y2: H - 22, stroke: t === 0 ? css("--fg") : css("--rule") }); if (!narrow || t % 60 === 0) el(s, "text", { x: X(t), y: H - 6, "text-anchor": "middle", class: "lab s m" }, t === 0 ? "0" : (t > 0 ? "+" : "") + (t % 60 ? (t / 60).toFixed(1) : t / 60) + " h"); }
+    rows.forEach((r, i) => { const yy = i * rh + 4, nm = r.country.replace("United States of America", "United States").replace("Central African Rep.", "C. African Rep."), sh = narrow && nm.length > 14 ? nm.slice(0, 13) + "." : nm;
+      el(s, "text", { x: lw - 6, y: yy + 13, "text-anchor": "end", class: "lab" }, sh);
+      const a = X(Math.min(0, r.e_ann)), b2 = X(Math.max(0, r.e_ann));
+      const rc = el(s, "rect", { x: a, y: yy + 2, width: Math.max(1, b2 - a), height: rh - 7, fill: COLS[cls(r.e_ann)], rx: 2, stroke: isDark() ? "none" : "rgba(0,0,0,.15)" });
+      el(s, "line", { x1: X(r.e_std), x2: X(r.e_std), y1: yy, y2: yy + rh - 3, stroke: css("--fg"), "stroke-width": 2 });
+      el(s, "text", { x: X(Math.max(0, r.e_ann)) + 5, y: yy + 13, class: "lab s m" }, (r.e_ann > 0 ? "+" : "") + Math.round(r.e_ann) + " min");
+      rc.addEventListener("mousemove", ev => showTip(`<b>${esc(r.country)}</b><br>year average ${dur(r.e_ann)}<br>no daylight saving ${dur(r.e_std)}<br>21 June ${dur(r.e_jun)}<br>21 December ${dur(r.e_dec)}`, ev.pageX - scrollX, ev.pageY - scrollY)); rc.addEventListener("mouseleave", hideTip); });
+    $("cCountries").appendChild(s);
+  });
+}
+const GALS = [["A Coruña", "#8E2A3B", 2.6], ["Santiago de Compostela", "#D9661F", 2.2], ["Vigo", "#E3A33B", 2.2], ["Madrid", "#5B564F", 1.2], ["Barcelona", "#8C8379", 1.2], ["London", "#2F5F8F", 1.4], ["Porto", "#2E8B7A", 1.2]];
+function galChart() {
+  resp($("cGal"), (W, narrow) => {
+    const H = narrow ? 300 : 360, L = 44, Rr = narrow ? 96 : 150, T = 10, B = 24, k = S.galK;
+    const all = GALS.flatMap(g => D.gal[g[0]][k]); const lo = Math.floor(Math.min(...all) / 60) * 60, hi = Math.ceil(Math.max(...all) / 60) * 60;
+    const x = d => L + (W - L - Rr) * (d - .5) / 365, y = v => T + (H - T - B) * (k === "rise" ? (v - lo) / (hi - lo) : 1 - (v - lo) / (hi - lo));
+    const s = svg(W, H);
+    for (let t = lo; t <= hi; t += 30) { el(s, "line", { x1: L, x2: W - Rr, y1: y(t), y2: y(t), stroke: t % 60 ? css("--panel") : css("--rule") }); if (t % 60 === 0) el(s, "text", { x: L - 5, y: y(t) + 4, "text-anchor": "end", class: "lab s m" }, hm(t)); }
+    let acc = 0; MDAYS.forEach((m, i) => { if (!narrow || i % 2 === 0) el(s, "text", { x: x(acc + m / 2), y: H - 6, "text-anchor": "middle", class: "lab s m" }, MONTHS[i].slice(0, 3)); acc += m; });
+    if (k === "rise") { el(s, "line", { x1: L, x2: W - Rr, y1: y(540), y2: y(540), stroke: "#8E2A3B", "stroke-dasharray": "4 3", opacity: .7 }); el(s, "text", { x: L + 4, y: y(540) - 4, class: "lab s", style: "fill:#8E2A3B" }, "9:00"); }
+    const labs = [];
+    for (const [nm, col, w] of GALS.slice().reverse()) { const a = D.gal[nm][k]; el(s, "path", { d: a.map((v, i) => (i ? "L" : "M") + x(i + 1).toFixed(1) + " " + y(v).toFixed(1)).join(""), fill: "none", stroke: col, "stroke-width": w, opacity: w < 2 ? .85 : 1 });
+      const ld = k === "rise" ? 3 : 178; labs.push({ y: y(a[ld - 1]), t: nm.replace("Santiago de Compostela", "Santiago"), c: col }); }
+    labs.sort((a, b) => a.y - b.y); for (let i = 1; i < labs.length; i++) if (labs[i].y - labs[i - 1].y < 13) labs[i].y = labs[i - 1].y + 13;
+    for (const l of labs) el(s, "text", { x: W - Rr + 6, y: l.y + 4, class: "lab b", style: `fill:${l.c}` }, l.t);
+    const hov = el(s, "rect", { x: L, y: T, width: W - L - Rr, height: H - T - B, fill: "transparent" });
+    hov.addEventListener("mousemove", ev => { const rc = s.getBoundingClientRect(), d = Math.max(1, Math.min(365, Math.round(((ev.clientX - rc.left) * W / rc.width - L) / (W - L - Rr) * 365 + .5))); showTip(`<b>${dateLabel(d)}</b><br>` + GALS.map(g => `<span style="color:${g[1]}">■</span> ${esc(g[0])}: ${hm(D.gal[g[0]][k][d - 1])}`).join("<br>"), ev.pageX - scrollX, ev.pageY - scrollY); });
+    hov.addEventListener("mouseleave", hideTip);
+    $("cGal").appendChild(s);
+  });
+}
+function tables() {
+  const row = r => `<tr><td>${esc(r.name)}, ${esc(r.cc)}</td><td class="num">${dur(r.e_ann).replace(" ahead", "").replace(" behind", "")}</td><td class="num">${r.rise_late}</td></tr>`;
+  const head = `<tr><th>City</th><th class="num">Gap</th><th class="num">Latest sunrise</th></tr>`;
+  $("tAhead").innerHTML = head + R.extremes.ahead_100k.map(row).join("");
+  $("tBehind").innerHTML = head + R.extremes.behind_100k.map(row).join("");
+}
+
+/* ===== search ===== */
+function suggest(inp, list, items, pick) {
+  let cur = -1, res = [];
+  const draw = () => { list.innerHTML = res.map((r, i) => `<li role="option" aria-selected="${i === cur}" data-i="${i}">${esc(r[0])}${r[2] ? ` <span>${esc(r[2])}</span>` : ""}</li>`).join(""); list.style.display = res.length ? "block" : "none"; list.querySelectorAll("li").forEach(li => li.onmousedown = e => { e.preventDefault(); go(+li.dataset.i); }); };
+  const go = i => { const r = res[i]; if (!r) return; inp.value = r[0]; list.style.display = "none"; inp.blur(); pick(r[1]); };
+  const norm = t => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  inp.addEventListener("input", () => { const q = norm(inp.value.trim()); cur = -1; if (!q) { res = []; draw(); return; } res = []; for (const p of items()) { const n = norm(p[0]); if (n.includes(q)) { res.push([p[0], p, p[1] + " · " + fmt(p[4]), n.startsWith(q) ? 0 : 1]); if (res.length > 400) break; } } res.sort((a, b) => a[3] - b[3]); res = res.slice(0, 12); draw(); });
+  inp.addEventListener("keydown", e => { if (e.key === "ArrowDown") { cur = Math.min(res.length - 1, cur + 1); draw(); e.preventDefault(); } else if (e.key === "ArrowUp") { cur = Math.max(0, cur - 1); draw(); e.preventDefault(); } else if (e.key === "Enter") { go(cur < 0 ? 0 : cur); } else if (e.key === "Escape") { list.style.display = "none"; } });
+  inp.addEventListener("blur", () => setTimeout(() => list.style.display = "none", 150));
+}
+function mapIntoView() { const m = $("lmap"), r = m.getBoundingClientRect(); if (r.top < 0 || r.bottom > innerHeight) m.scrollIntoView({ behavior: "smooth", block: innerWidth < 920 ? "start" : "center" }); }
+
+/* ===== boot ===== */
+function loadImg(src) { return new Promise((ok, bad) => { const im = new Image(); im.onload = () => ok(im); im.onerror = bad; im.src = src; }); }
+async function boot() {
+  legend();
+  const [pd, im] = await Promise.all([fetch("data/page.json").then(r => r.json()), loadImg("data/zgrid.png")]);
+  D = pd; Z = D.zones;
+  { const c = document.createElement("canvas"); c.width = im.width; c.height = im.height; const x = c.getContext("2d", { willReadFrequently: true }); x.drawImage(im, 0, 0); const px = x.getImageData(0, 0, c.width, c.height).data; SRCG = new Uint16Array(c.width * c.height); for (let i = 0, j = 0; j < SRCG.length; i += 4, j++) SRCG[j] = px[i] | (px[i + 1] << 8); }
+  histChart(); countryChart(); galChart(); tables();
+  const lp = D.places.find(p => p[0] === "London" && p[1] === "GB"); LONDON = yearSeries(lp[2], lp[3], zoneAt(lp[2], lp[3]));
+  document.querySelectorAll("#histSeg .btn").forEach(b => b.onclick = () => { S.histK = b.dataset.k; setPressed("histSeg", "k", S.histK); redraws.forEach(f => f()); });
+  document.querySelectorAll("#galSeg .btn").forEach(b => b.onclick = () => { S.galK = b.dataset.k; setPressed("galSeg", "k", S.galK); redraws.forEach(f => f()); });
+  document.querySelectorAll("#modeSeg .btn").forEach(b => b.onclick = () => { S.mode = b.dataset.m; update(); });
+  document.querySelectorAll("#quick .btn").forEach(b => b.onclick = () => { S.mode = "day"; S.doy = b.dataset.d === "today" ? todayDoy() : +b.dataset.d; update(); });
+  let rq = 0; $("doy").addEventListener("input", e => { S.doy = +e.target.value; S.mode = "day"; $("dateBig").textContent = dateLabel(S.doy); cancelAnimationFrame(rq); rq = requestAnimationFrame(update); });
+  suggest($("q"), $("sug"), () => D.places, p => { selectAt(p[2], p[3], p[0] + ", " + p[1], true); mapIntoView(); });
+  S.doy = 172;
+  const gal = D.places.find(p => p[0] === "A Coruña");
+  if (!window.L) { $("loading").textContent = "The map library did not load."; selectAt(gal[2], gal[3], "A Coruña, ES"); return; }
+  lmap = L.map("lmap", { minZoom: innerWidth < 600 ? 1 : 2, maxZoom: 9, zoomSnap: .5, worldCopyJump: false, maxBounds: WORLD.pad(.05), maxBoundsViscosity: .8, scrollWheelZoom: false });
+  lmap.attributionControl.setPrefix('<a href="https://leafletjs.com">Leaflet</a>');
+  lmap.fitBounds(innerWidth < 600 ? [[-40, -20], [65, 60]] : [[-50, -140], [72, 160]]);
+  for (const [k, p] of [["names", 640], ["tz", 450], ["borders", 440], ["hills", 430], ["col", 420], ["land", 250]]) lmap.createPane(k).style.zIndex = p;
+  for (const k of ["names", "hills", "borders", "tz", "col"]) lmap.getPane(k).style.pointerEvents = "none";
+  const esri = (svc, extra) => L.tileLayer(`https://server.arcgisonline.com/ArcGIS/rest/services/${svc}/MapServer/tile/{z}/{y}/{x}`, { maxZoom: 16, attribution: "Tiles © Esri" + (extra || "") });
+  tiles = { light: esri("Canvas/World_Light_Gray_Base"), dark: esri("Canvas/World_Dark_Gray_Base"), satellite: esri("World_Imagery", ", Maxar, Earthstar Geographics") };
+  const [bj, tzj] = await Promise.all([fetch("data/borders.json").then(r => r.json()), fetch("data/tzlines.json").then(r => r.json())]);
+  landL = L.geoJSON(bj, { pane: "land", interactive: false, style: () => ({ stroke: false, fillColor: css("--land"), fillOpacity: 1 }) });
+  borderL = L.geoJSON(bj, { pane: "borders", interactive: false, renderer: L.canvas({ pane: "borders", padding: .3 }), style: () => ({ color: css("--line"), weight: 1, opacity: .5, fill: false }) });
+  tzL = L.geoJSON(tzj, { pane: "tz", interactive: false, renderer: L.canvas({ pane: "tz", padding: .3 }), style: () => ({ color: css("--line"), weight: 1.2, opacity: .7, dashArray: "4 3" }) });
+  initColourCanvas();
+  colL = new CanvasOverlay(colCv, [[D.grid.s, -180], [D.grid.n, 180]], { pane: "col", interactive: false, attribution: "Zones: timezone-boundary-builder (ODbL)" }).addTo(lmap);
+  hillCv = document.createElement("canvas");
+  hillL = new CanvasOverlay(hillCv, WORLD, { pane: "hills", interactive: false, attribution: "Hills: AWS Terrain" });
+  nameL = L.layerGroup();
+  L.control.scale({ imperial: false, position: "bottomleft" }).addTo(lmap);
+  initLayers(); applyLayers(); update();
+  lmap.on("click", e => { lmap.scrollWheelZoom.enable(); let lon = ((e.latlng.lng + 180) % 360 + 360) % 360 - 180; selectAt(e.latlng.lat, lon, null, false); });
+  lmap.on("mousemove", e => { const lon = ((e.latlng.lng + 180) % 360 + 360) % 360 - 180, z = zoneAt(e.latlng.lat, lon); if (z < 0) { hideTip(); return; } const ev = e.originalEvent; showTip(`${esc(dur(wrap(zoneVal(z) - 4 * lon)))}<br><span style="opacity:.7">${esc(Z[z].id)}</span>`, ev.pageX - scrollX, ev.pageY - scrollY); });
+  lmap.on("mouseout", hideTip);
+  $("loading").style.display = "none";
+  selectAt(gal[2], gal[3], "A Coruña, ES", false);
+}
+boot().catch(e => { $("loading").textContent = "Could not load the data: " + e.message; console.error(e); });
+</script>
+</body>
+</html>
